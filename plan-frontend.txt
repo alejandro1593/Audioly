@@ -1,0 +1,428 @@
+# PLAN FRONTEND - AUDIOLY (NEXT.JS)
+
+## 1. TECNOLOGÍA PRINCIPAL
+- **Framework**: Next.js 14 (App Router)
+- **Lenguaje**: JavaScript/TypeScript
+- **Estilos**: Tailwind CSS
+- **Estado**: Zustand
+- **HTTP Client**: Axios
+
+## 2. ESTRUCTURA DEL PROYECTO
+
+```
+audioly-frontend/
+├── app/
+│   ├── (auth)/
+│   │   ├── login/
+│   │   ├── register/
+│   │   └── forgot-password/
+│   ├── (main)/
+│   │   ├── page.js              # Home / Descubrir
+│   │   ├── search/
+│   │   │   └── [query]/
+│   │   ├── library/
+│   │   │   ├── playlists/
+│   │   │   ├── liked/
+│   │   │   └── history/
+│   │   ├── artist/
+│   │   │   └── [id]/
+│   │   ├── album/
+│   │   │   └── [id]/
+│   │   ├── playlist/
+│   │   │   └── [id]/
+│   │   ├── podcast/
+│   │   │   └── [id]/
+│   │   └── settings/
+│   ├── layout.js
+│   └── globals.css
+├── components/
+│   ├── layout/
+│   │   ├── Sidebar.jsx
+│   │   ├── Navbar.jsx
+│   │   └── Player.jsx
+│   ├── ui/
+│   │   ├── Button.jsx
+│   │   ├── Card.jsx
+│   │   ├── Modal.jsx
+│   │   └── Input.jsx
+│   ├── music/
+│   │   ├── SongCard.jsx
+│   │   ├── AlbumCard.jsx
+│   │   ├── ArtistCard.jsx
+│   │   ├── PlaylistCard.jsx
+│   │   └── SongList.jsx
+│   ├── player/
+│   │   ├── Controls.jsx
+│   │   ├── Volume.jsx
+│   │   ├── ProgressBar.jsx
+│   │   ├── Queue.jsx
+│   │   └── NowPlaying.jsx
+│   ├── search/
+│   │   ├── SearchBar.jsx
+│   │   └── SearchResults.jsx
+│   └── playlist/
+│       ├── CreatePlaylist.jsx
+│       └── EditPlaylist.jsx
+├── lib/
+│   ├── api.js                   # Axios instance
+│   ├── auth.js                  # JWT helpers
+│   └── utils.js
+├── store/
+│   ├── usePlayerStore.js        # Estado del reproductor
+│   ├── useAuthStore.js          # Estado de autenticación
+│   ├── useLibraryStore.js       # Estado de biblioteca
+│   └── useSearchStore.js        # Estado de búsqueda
+├── hooks/
+│   ├── usePlayer.js
+│   ├── useAuth.js
+│   └── useDebounce.js
+├── styles/
+│   └── player.css               # Estilos custom del player
+├── public/
+│   └── images/
+├── middleware.js                 # Protección de rutas
+├── next.config.js
+├── tailwind.config.js
+└── package.json
+```
+
+## 3. COMPONENTES PRINCIPALES
+
+### Layout Components
+
+#### Sidebar.jsx
+```javascript
+- Logo de la app
+- Navegación principal (Home, Search, Library)
+- Tu biblioteca (Playlists, Liked Songs, History)
+- Lista de playlists del usuario
+- Botón crear playlist
+```
+
+#### Player.jsx (Fixed Bottom)
+```javascript
+- Ahora sonando (cover, title, artist, like)
+- Controles (prev, play/pause, next, shuffle, repeat)
+- Barra de progreso (seekable)
+- Volumen (slider + mute)
+- Cola de reproducción
+- Modo repeat (off, all, one)
+```
+
+#### Navbar.jsx
+```javascript
+- Búsqueda global
+- Navegación (atras, adelante)
+- Menú usuario (profile, settings, logout)
+- Notificaciones
+```
+
+### Music Components
+
+#### SongCard.jsx
+```javascript
+- Portada de la canción (hover play)
+- Título y artista
+- Duración
+- Botones: play, like, add to playlist, more options
+- Indicador de "explícito"
+```
+
+#### AlbumCard.jsx
+```javascript
+- Portada del álbum
+- Título y artista
+- Año de lanzamiento
+- Número de canciones
+- Hover effect con play
+```
+
+#### ArtistCard.jsx
+```javascript
+- Imagen del artista (circular)
+- Nombre
+- Botón seguir/dejar de seguir
+- Número de oyentes mensuales
+```
+
+#### PlaylistCard.jsx
+```javascript
+- Portada de la playlist
+- Nombre
+- Descripción
+- Número de canciones
+- Dueño de la playlist
+```
+
+### Player Components
+
+#### Controls.jsx
+```javascript
+// Componentes del reproductor
+- Shuffle (random)
+- Previous
+- Play/Pause (botón grande)
+- Next
+- Repeat (off, all, one)
+- Like (heart)
+- Lyrics (ver letras)
+- Queue (ver cola)
+```
+
+#### Volume.jsx
+```javascript
+- Icono de volumen (mute, bajo, medio, alto)
+- Slider de volumen
+- Tecla M para mute
+```
+
+#### ProgressBar.jsx
+```javascript
+- Tiempo actual / Duración total
+- Barra seekable (click para saltar)
+- Tooltip con tiempo al hacer hover
+```
+
+### Playlist Components
+
+#### CreatePlaylist.jsx
+```javascript
+// Modal para crear playlist
+- Nombre (required)
+- Descripción
+- Portada (upload image)
+- Visibilidad (pública/privada)
+- Botón crear
+```
+
+#### EditPlaylist.jsx
+```javascript
+// Modal para editar playlist
+- Editar nombre, descripción, portada
+- Reordenar canciones (drag & drop)
+- Eliminar canciones
+- Agregar canciones
+```
+
+## 4. PÁGINAS PRINCIPALES
+
+### Home (page.js)
+```javascript
+- Escuchado recientemente
+- Playlists recomendadas
+- Lanzamientos nuevos
+- Top artists del usuario
+- Géneros populares
+- Álbumes destacados
+```
+
+### Search Page
+```javascript
+- Barra de búsqueda con autocompletado
+- Filtros: canciones, artistas, álbumes, playlists, podcasts
+- Resultados por categoría
+- Historial de búsquedas
+- Búsquedas trending
+```
+
+### Artist Page
+```javascript
+- Header con imagen de fondo y nombre
+- Botón shuffle play / follow
+- Popular tracks (top 5)
+- Discografía (álbumes, singles, EPs)
+- Artistas similares
+- Info del artista
+```
+
+### Album Page
+```javascript
+- Header (cover, título, artista, año, duración total)
+- Botón play / like / more options
+- Lista de canciones
+- Letra expandible
+```
+
+### Playlist Page
+```javascript
+- Header (cover, nombre, descripción, owner)
+- Número de canciones y duración total
+- Botón play / shuffle / like / edit
+- Lista de canciones (con drag & drop para reordenar)
+- Colaboradores (si es colaborativa)
+```
+
+### Library Page
+```javascript
+// Tabs: Playlists | Liked Songs | History
+- Playlists creadas por el usuario
+- Canciones likeadas
+- Historial de escucha reciente
+- Filtros y ordenamiento
+```
+
+### Settings Page
+```javascript
+- Perfil (editar username, email, avatar)
+- Preferencias musicales
+- Calidad de audio
+- Notificaciones
+- Cuenta (cambiar contraseña, eliminar cuenta)
+- Premium status
+```
+
+## 5. HOOKS PERSONALIZADOS
+
+### usePlayer.js
+```javascript
+// Hook principal del reproductor
+- currentSong
+- isPlaying
+- volume
+- progress
+- duration
+- queue
+- shuffle
+- repeat
+- play(song)
+- pause()
+- next()
+- previous()
+- seek(time)
+- setVolume(vol)
+- toggleShuffle()
+- toggleRepeat()
+- addToQueue(song)
+- removeFromQueue(index)
+```
+
+### useAuth.js
+```javascript
+// Hook de autenticación
+- user
+- isAuthenticated
+- login(email, password)
+- register(data)
+- logout()
+- updateProfile(data)
+```
+
+### useDebounce.js
+```javascript
+// Hook para búsquedas en tiempo real
+- Debounced value (300ms delay)
+- Evita múltiples llamadas a la API
+```
+
+## 6. STORES (ZUSTAND)
+
+### usePlayerStore.js
+```javascript
+- State: currentSong, isPlaying, volume, progress, queue, shuffle, repeat
+- Actions: play, pause, next, previous, seek, setVolume, addToQueue
+- Persist: guarda en localStorage para mantener estado al recargar
+```
+
+### useAuthStore.js
+```javascript
+- State: user, token, isAuthenticated
+- Actions: login, logout, setUser, refreshToken
+- Persist: token en localStorage/cookie
+```
+
+### useLibraryStore.js
+```javascript
+- State: playlists, likedSongs, history
+- Actions: fetchPlaylists, toggleLike, addToHistory
+```
+
+## 7. FUNCIONALIDADES UI/UX
+
+### Reproducción Continua
+- El player NO se detiene al navegar entre páginas
+- Estado persiste en todo el sitio
+- Actualización de UI en tiempo real
+
+### Atajos de Teclado
+- Espacio: Play/Pause
+- Flecha izquierda/derecha: Seek ±5s
+- Flecha arriba/abajo: Volumen ±5%
+- M: Mute
+- N: Next
+- P: Previous
+- S: Shuffle
+- R: Repeat
+
+### Drag & Drop
+- Reordenar canciones en playlists
+- Añadir canciones desde la cola
+- Reordenar cola de reproducción
+
+### Virtual Scrolling
+- Para listas grandes de canciones
+- Carga infinita en resultados de búsqueda
+- Performance óptima
+
+### Responsive Design
+- Desktop: Sidebar + Player
+- Tablet: Sidebar colapsable
+- Mobile: Bottom navigation + Player
+
+### Animaciones
+- Transiciones suaves entre páginas
+- Hover effects en cards
+- Animación de play/pause
+- Progress bar animada
+
+### Dark Mode
+- Tema oscuro por defecto (como Spotify)
+- Toggle para tema claro (opcional)
+
+## 8. MIDDLEWARES (Next.js)
+
+### middleware.js
+```javascript
+// Protección de rutas
+- Rutas protegidas: /library, /settings, /playlist/*
+- Redirigir a /login si no autenticado
+- Refresh token automático
+```
+
+## 9. DEPENDENCIAS
+
+```json
+{
+  "next": "^14.0.0",
+  "react": "^18.2.0",
+  "react-dom": "^18.2.0",
+  "zustand": "^4.4.0",
+  "axios": "^1.6.0",
+  "react-hot-toast": "^2.4.0",
+  "react-icons": "^4.12.0",
+  "react-dnd": "^16.0.0",
+  "react-dnd-html5-backend": "^16.0.0",
+  "tailwindcss": "^3.3.0",
+  "postcss": "^8.4.0",
+  "autoprefixer": "^10.4.0",
+  "@headlessui/react": "^1.7.0",
+  "framer-motion": "^10.16.0"
+}
+```
+
+## 10. SCRIPTS
+
+```json
+{
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint"
+}
+```
+
+## 11. VARIABLES DE ENTorno
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
+```

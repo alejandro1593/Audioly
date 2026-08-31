@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@layer base {
+  body {
+    @apply bg-cyber-black text-white font-body;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%238b5cf6' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .sidebar-link {
+    @apply flex items-center gap-4 px-4 py-2.5 text-cyber-text font-semibold hover:text-white transition-all rounded-lg hover:bg-white/5 hover:translate-x-1;
+  }
+
+  .sidebar-link-active {
+    @apply text-white bg-gradient-to-r from-cyber-purple/20 to-transparent border-r-2 border-cyber-purple;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-cyber text-white font-bold px-6 py-2.5 rounded-xl hover:scale-105 hover:shadow-neon transition-all;
+  }
+
+  .btn-secondary {
+    @apply bg-cyber-panel text-white font-bold px-6 py-2.5 rounded-xl hover:scale-105 hover:bg-cyber-border transition-all border border-cyber-border;
+  }
+
+  .card {
+    @apply bg-cyber-panel/60 backdrop-blur px-4 py-4 rounded-2xl border border-cyber-border/50 hover:border-cyber-purple/60 hover:bg-cyber-panel hover:shadow-glow transition-all cursor-pointer hover:-translate-y-1;
+  }
+
+  .input-primary {
+    @apply w-full bg-cyber-dark border border-cyber-border rounded-xl px-4 py-3 text-white placeholder-cyber-text focus:outline-none focus:border-cyber-purple focus:shadow-neon transition-all;
+  }
+
+  .glass-panel {
+    @apply bg-cyber-panel/40 backdrop-blur-xl border border-cyber-border/50;
+  }
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #10102e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8b5cf6, #d946ef);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #7c3aed, #c026d3);
+}

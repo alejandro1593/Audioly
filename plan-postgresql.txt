@@ -1,0 +1,356 @@
+# PLAN PROYECTO SPOTIFY CLONE - POSTGRESQL (pg + Sequelize/Prisma)
+
+## 1. TECNOLOGÍA PRINCIPAL
+- **Base de Datos**: PostgreSQL 15
+- **ORM**: Sequelize o Prisma
+- **Backend**: Node.js + Express.js
+- **Autenticación**: JWT + bcrypt
+
+## 2. MODELOS DE DATOS (TABLAS)
+
+### Users Table
+```sql
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  avatar VARCHAR(255) DEFAULT 'default-avatar.png',
+  role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'artist', 'admin')),
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Artists Table
+```sql
+CREATE TABLE artists (
+  id SERIAL PRIMARY KEY,
+  userId INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  name VARCHAR(100) NOT NULL,
+  image VARCHAR(255),
+  bio TEXT,
+  verified BOOLEAN DEFAULT FALSE,
+  monthlyListeners INTEGER DEFAULT 0
+);
+```
+
+### Songs Table
+```sql
+CREATE TABLE songs (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  artistId INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+  albumId INTEGER REFERENCES albums(id) ON DELETE SET NULL,
+  duration INTEGER, -- seconds
+  url VARCHAR(500),
+  coverImage VARCHAR(255),
+  genre VARCHAR(50),
+  plays INTEGER DEFAULT 0,
+  lyrics TEXT,
+  releaseDate DATE,
+  isExplicit BOOLEAN DEFAULT FALSE
+);
+```
+
+### Albums Table
+```sql
+CREATE TABLE albums (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  artistId INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+  coverImage VARCHAR(255),
+  releaseDate DATE,
+  genre VARCHAR(50),
+  description TEXT
+);
+```
+
+### Playlists Table
+```sql
+CREATE TABLE playlists (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  coverImage VARCHAR(255),
+  isPublic BOOLEAN DEFAULT TRUE,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Playlist_Songs Table (Many-to-Many)
+```sql
+CREATE TABLE playlist_songs (
+  id SERIAL PRIMARY KEY,
+  playlistId INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+  songId INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+  addedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(playlistId, songId)
+);
+```
+
+### User_Liked_Songs Table
+```sql
+CREATE TABLE user_liked_songs (
+  id SERIAL PRIMARY KEY,
+  userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  songId INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+  likedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(userId, songId)
+);
+```
+
+### User_Follows Table
+```sql
+CREATE TABLE user_follows (
+  id SERIAL PRIMARY KEY,
+  followerId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  followingId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(followerId, followingId)
+);
+```
+
+### Podcasts Table
+```sql
+CREATE TABLE podcasts (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  hostId INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+  description TEXT,
+  coverImage VARCHAR(255),
+  genre VARCHAR(50)
+);
+```
+
+### Podcast_Episodes Table
+```sql
+CREATE TABLE podcast_episodes (
+  id SERIAL PRIMARY KEY,
+  podcastId INTEGER NOT NULL REFERENCES podcasts(id) ON DELETE CASCADE,
+  title VARCHAR(200) NOT NULL,
+  audioUrl VARCHAR(500),
+  duration INTEGER,
+  releaseDate DATE,
+  description TEXT
+);
+```
+
+### Listening_History Table
+```sql
+CREATE TABLE listening_history (
+  id SERIAL PRIMARY KEY,
+  userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  songId INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+  playedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  durationPlayed INTEGER -- seconds listened
+);
+```
+
+### Search_History Table
+```sql
+CREATE TABLE search_history (
+  id SERIAL PRIMARY KEY,
+  userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  query VARCHAR(200),
+  searchedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Notifications Table
+```sql
+CREATE TABLE notifications (
+  id SERIAL PRIMARY KEY,
+  userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type VARCHAR(50),
+  message TEXT,
+  isRead BOOLEAN DEFAULT FALSE,
+  relatedId INTEGER,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## 3. ÍNDICES PARA RENDIMIENTO
+
+```sql
+-- Búsquedas frecuentes
+CREATE INDEX idx_songs_title ON songs(title);
+CREATE INDEX idx_songs_artist ON songs(artistId);
+CREATE INDEX idx_songs_album ON songs(albumId);
+CREATE INDEX idx_songs_genre ON songs(genre);
+CREATE INDEX idx_songs_release ON songs(releaseDate);
+CREATE INDEX idx_artists_name ON artists(name);
+CREATE INDEX idx_albums_title ON albums(title);
+
+-- Historial y estadísticas
+CREATE INDEX idx_history_user ON listening_history(userId);
+CREATE INDEX idx_history_date ON listening_history(playedAt);
+CREATE INDEX idx_history_song ON listening_history(songId);
+CREATE INDEX idx_songs_plays ON songs(plays DESC);
+
+-- Búsqueda full-text
+CREATE INDEX idx_songs_search ON songs USING gin(to_tsvector('english', title));
+CREATE INDEX idx_artists_search ON artists USING gin(to_tsvector('english', name));
+```
+
+## 4. FUNCIONALIDADES
+
+### Autenticación y Usuarios
+- Registro y login con JWT
+- Recuperación de contraseña por email
+- Perfil de usuario con avatar
+- Seguir/dejar de seguir artistas y usuarios
+- Historial de escucha
+- Preferencias musicales
+
+### Música
+- Reproducción de canciones con streaming
+- Control de reproducción (play, pause, next, previous)
+- Búsqueda avanzada de canciones, artistas, álbumes
+- Filtrado por género, año, popularidad
+- Letras de canciones
+- Saltar a tiempo específico en la canción
+
+### Álbumes y Artistas
+- Páginas de artistas con discografía
+- Información de álbumes con lista de canciones
+- Artistas verificados
+- Estadísticas de reproducciones mensuales
+
+### Playlists
+- Crear, editar, eliminar playlists
+- Añadir/eliminar canciones
+- Playlists colaborativas
+- Playlists públicas/privadas
+- Sugerencia de playlists basadas en historial
+- Playlists generadas automáticamente
+
+### Sistema Social
+- Seguir usuarios
+- Compartir playlists
+- Actividad reciente de amigos
+- playlists guardadas de otros usuarios
+
+### Podcasts
+- Escuchar episodios
+- Suscribirse a podcasts
+- Capítulos y marcas de tiempo
+
+### Búsqueda
+- Búsqueda global (canciones, artistas, álbumes, playlists)
+- Autocompletado
+- Historial de búsquedas
+- **Búsqueda full-text nativa de PostgreSQL**
+
+### Premium (Monetización)
+- Modo offline
+- Saltos ilimitados
+- Audio de alta calidad
+- Sin anuncios
+- Descargas para escuchar offline
+
+### Reproducción
+- Cola de reproducción
+- Modo aleatorio
+- Repetir canción/playlist
+- Crossfade entre canciones
+- Mezclar por género
+
+### Notificaciones
+- Nuevos lanzamientos de artistas seguidos
+- Actividad en playlists colaborativas
+- Recomendaciones personalizadas
+
+### Administración
+- Panel de administrador
+- Gestionar contenido (subir, editar, eliminar)
+- Estadísticas de la plataforma
+- Moderación de contenido
+- Gestión de usuarios
+
+### Funcionalidades Avanzadas de PostgreSQL
+- **CTEs (Common Table Expressions)** para queries complejas
+- **Window Functions** para rankings y estadísticas
+- **JSON/JSONB** para metadatos flexibles
+- **Arrays** para géneros y tags
+- **Materialized Views** para dashboards
+- **Particionamiento** para tablas grandes (historial)
+
+## 5. RUTAS API
+
+### Auth
+- POST /api/auth/register
+- POST /api/auth/login
+- POST /api/auth/refresh-token
+- POST /api/auth/forgot-password
+
+### Users
+- GET /api/users/:id
+- PUT /api/users/:id
+- POST /api/users/:id/follow
+- GET /api/users/:id/history
+
+### Songs
+- GET /api/songs
+- GET /api/songs/:id
+- POST /api/songs (admin)
+- PUT /api/songs/:id (admin)
+- DELETE /api/songs/:id (admin)
+- POST /api/songs/:id/like
+- GET /api/songs/:id/lyrics
+
+### Albums
+- GET /api/albums
+- GET /api/albums/:id
+- POST /api/albums (admin)
+- GET /api/albums/:id/songs
+
+### Artists
+- GET /api/artists
+- GET /api/artists/:id
+- PUT /api/artists/:id
+- GET /api/artists/:id/albums
+
+### Playlists
+- GET /api/playlists
+- POST /api/playlists
+- PUT /api/playlists/:id
+- DELETE /api/playlists/:id
+- POST /api/playlists/:id/songs
+- DELETE /api/playlists/:id/songs/:songId
+
+### Search
+- GET /api/search?q=:query
+
+### Podcasts
+- GET /api/podcasts
+- GET /api/podcasts/:id
+- POST /api/podcasts/:id/subscribe
+
+### Analytics (PostgreSQL Avanzado)
+- GET /api/analytics/top-songs
+- GET /api/analytics/user-stats
+- GET /api/analytics/trending
+
+## 6. MIDDLEWARES
+- JWT Authentication
+- Role-based access control
+- Rate limiting
+- CORS
+- Error handling
+- File upload (multer)
+- Validation (express-validator)
+
+## 7. SERVICIOS EXTERNOS
+- AWS S3 / Cloudinary para almacenamiento
+- Redis para caché
+- Socket.io para reproducción en tiempo real
+- Nodemailer para emails
+
+## 8. DESPLIEGUE
+- Docker + Docker Compose
+- PostgreSQL en RDS/Heroku (producción)
+- PM2 para clustering
+- NGINX como reverse proxy
