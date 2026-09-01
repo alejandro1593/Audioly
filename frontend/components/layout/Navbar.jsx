@@ -2,13 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useDebounce } from '../../hooks/useDebounce'
 import { ArrowLeft, ArrowRight, Search } from 'lucide-react'
 
 export default function Navbar() {
   const [query, setQuery] = useState('')
   const router = useRouter()
-  const debouncedQuery = useDebounce(query, 500)
 
   const handleSearch = (e) => {
     e.preventDefault()

@@ -5,6 +5,7 @@ import api from '../../lib/api'
 import { useLibraryStore } from '../../store/useLibraryStore'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import SongCard from '../../components/music/SongCard'
+import { normalizeSongs } from '../../lib/normalize'
 import Link from 'next/link'
 
 export default function LibraryPage() {
@@ -90,7 +91,7 @@ export default function LibraryPage() {
                 </button>
               )}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {likedSongs.map((song) => (
+                {normalizeSongs(likedSongs).map((song) => (
                   <SongCard
                     key={song.id}
                     song={song}
@@ -112,8 +113,8 @@ export default function LibraryPage() {
                   onClick={() => playAll([entry.song])}
                   className="flex items-center gap-4 px-4 py-3 hover:bg-cyber-dark cursor-pointer"
                 >
-                  {entry.song?.coverImage ? (
-                    <img src={entry.song.coverImage} alt="" className="w-10 h-10 rounded" />
+                  {entry.song?.coverImage || entry.song?.album?.coverImage ? (
+                    <img src={entry.song?.coverImage || entry.song?.album?.coverImage} alt="" className="w-10 h-10 rounded" />
                   ) : (
                     <div className="w-10 h-10 bg-cyber-darker rounded flex items-center justify-center">♪</div>
                   )}

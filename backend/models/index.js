@@ -1,3 +1,5 @@
+const sequelize = require('../config/database');
+
 const User = require('./User');
 const Artist = require('./Artist');
 const Album = require('./Album');
@@ -6,6 +8,7 @@ const Playlist = require('./Playlist');
 const PlaylistSong = require('./PlaylistSong');
 const UserLikedSong = require('./UserLikedSong');
 const UserFollow = require('./UserFollow');
+const PlaylistLike = require('./PlaylistLike');
 const ListeningHistory = require('./ListeningHistory');
 const Podcast = require('./Podcast');
 const PodcastEpisode = require('./PodcastEpisode');
@@ -42,6 +45,10 @@ Song.belongsToMany(User, { through: UserLikedSong, foreignKey: 'songId', as: 'li
 User.belongsToMany(User, { through: UserFollow, foreignKey: 'followerId', as: 'following' });
 User.belongsToMany(User, { through: UserFollow, foreignKey: 'followingId', as: 'followers' });
 
+// User <-> Playlist (Many-to-Many - Likes)
+User.belongsToMany(Playlist, { through: PlaylistLike, foreignKey: 'userId', as: 'likedPlaylists' });
+Playlist.belongsToMany(User, { through: PlaylistLike, foreignKey: 'playlistId', as: 'likedBy' });
+
 // User -> ListeningHistory (One-to-Many)
 User.hasMany(ListeningHistory, { foreignKey: 'userId', as: 'listeningHistory' });
 ListeningHistory.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -59,6 +66,7 @@ Podcast.hasMany(PodcastEpisode, { foreignKey: 'podcastId', as: 'episodes' });
 PodcastEpisode.belongsTo(Podcast, { foreignKey: 'podcastId', as: 'podcast' });
 
 module.exports = {
+  sequelize,
   User,
   Artist,
   Album,
@@ -67,6 +75,7 @@ module.exports = {
   PlaylistSong,
   UserLikedSong,
   UserFollow,
+  PlaylistLike,
   ListeningHistory,
   Podcast,
   PodcastEpisode

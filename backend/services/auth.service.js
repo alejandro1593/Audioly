@@ -66,6 +66,11 @@ class AuthService {
       throw new ApiError(400, 'No puedes seguirte a ti mismo');
     }
 
+    const target = await User.findByPk(targetUserId);
+    if (!target) {
+      throw new ApiError(404, 'Usuario no encontrado');
+    }
+
     await UserFollow.findOrCreate({
       where: { followerId: userId, followingId: targetUserId }
     });
@@ -74,6 +79,11 @@ class AuthService {
   }
 
   async unfollowUser(userId, targetUserId) {
+    const target = await User.findByPk(targetUserId);
+    if (!target) {
+      throw new ApiError(404, 'Usuario no encontrado');
+    }
+
     await UserFollow.destroy({
       where: { followerId: userId, followingId: targetUserId }
     });

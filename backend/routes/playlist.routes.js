@@ -11,8 +11,14 @@ router.post('/', playlistController.createPlaylist);
 // Get playlists (public or by user)
 router.get('/', playlistController.getAllPlaylists);
 
+// Get liked playlists by current user
+router.get('/liked', playlistController.getLikedPlaylists);
+
 // Get single playlist
 router.get('/:id', playlistController.getPlaylistById);
+
+// Like / unlike playlist
+router.post('/:id/like', playlistController.toggleLike);
 
 // Update playlist
 router.put('/:id', playlistController.updatePlaylist);

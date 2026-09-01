@@ -37,6 +37,16 @@ class PlaylistController {
     const playlist = await PlaylistService.removeSong(req.params.id, req.user.id, req.params.songId);
     res.json({ success: true, playlist });
   });
+
+  toggleLike = asyncHandler(async (req, res) => {
+    const result = await PlaylistService.toggleLike(req.params.id, req.user.id);
+    res.json({ success: true, ...result });
+  });
+
+  getLikedPlaylists = asyncHandler(async (req, res) => {
+    const playlists = await PlaylistService.getLikedPlaylists(req.user.id);
+    res.json({ success: true, playlists });
+  });
 }
 
 module.exports = new PlaylistController();

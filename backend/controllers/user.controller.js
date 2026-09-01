@@ -27,6 +27,12 @@ class UserController {
     const history = await UserService.getHistory(req.user.id);
     res.json({ success: true, history });
   });
+
+  getRecommendations = asyncHandler(async (req, res) => {
+    const limit = parseInt(req.query.limit, 10) || 12;
+    const songs = await UserService.getRecommendations(req.user.id, limit);
+    res.json({ success: true, songs });
+  });
 }
 
 module.exports = new UserController();

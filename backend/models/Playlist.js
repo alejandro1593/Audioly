@@ -28,6 +28,10 @@ const Playlist = sequelize.define('Playlist', {
   isPublic: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  isCollaborative: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
   tableName: 'playlists'

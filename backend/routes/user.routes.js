@@ -11,6 +11,9 @@ router.get('/liked-songs', userController.getLikedSongs);
 // Get listening history
 router.get('/history', userController.getHistory);
 
+// Get recommendations
+router.get('/recommendations', userController.getRecommendations);
+
 // Update profile
 router.put('/profile', userController.updateProfile);
 

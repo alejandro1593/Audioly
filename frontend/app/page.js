@@ -8,15 +8,22 @@ import SongCard from '../components/music/SongCard'
 import AlbumCard from '../components/music/AlbumCard'
 import ArtistCard from '../components/music/ArtistCard'
 import LoginPromptModal from '../components/ui/LoginPromptModal'
+import { normalizeSongs } from '../lib/normalize'
+import Link from 'next/link'
 
 export default function HomePage() {
   const [topSongs, setTopSongs] = useState([])
+  const [topTotal, setTopTotal] = useState(0)
   const [albums, setAlbums] = useState([])
   const [artists, setArtists] = useState([])
+  const [recommendations, setRecommendations] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [greeting, setGreeting] = useState('')
   const { isAuthenticated } = useAuthStore()
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+
+  const TOP_LIMIT = 8
 
   useEffect(() => {
     const hour = new Date().getHours()
@@ -27,11 +34,12 @@ export default function HomePage() {
     const fetchData = async () => {
       try {
         const [songsRes, albumsRes, artistsRes] = await Promise.all([
-          api.get('/songs/top'),
+          api.get('/songs/top', { params: { limit: TOP_LIMIT, offset: 0 } }),
           api.get('/albums'),
           api.get('/artists', { params: { limit: 8 } })
         ])
-        setTopSongs(songsRes.data.songs)
+        setTopSongs(normalizeSongs(songsRes.data.songs))
+        setTopTotal(songsRes.data.total || 0)
         setAlbums(albumsRes.data.albums)
         setArtists(artistsRes.data.artists)
       } catch (error) {
@@ -43,7 +51,28 @@ export default function HomePage() {
     fetchData()
   }, [])
 
-  const playSong = (song, index) => {
+  const loadMore = async () => {
+    setLoadingMore(true)
+    try {
+      const res = await api.get('/songs/top', {
+        params: { limit: TOP_LIMIT, offset: topSongs.length }
+      })
+      setTopSongs((prev) => [...prev, ...res.data.songs])
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    api.get('/users/recommendations', { params: { limit: 8 } })
+      .then((res) => setRecommendations(normalizeSongs(res.data.songs || [])))
+      .catch(() => {})
+  }, [isAuthenticated])
+
+  const playSong = (song) => {
     if (!isAuthenticated) {
       setShowLoginPrompt(true)
       return
@@ -85,17 +114,50 @@ export default function HomePage() {
         {loading ? (
           <div className="text-cyber-text animate-pulse">Cargando...</div>
         ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {topSongs.map((song, index) => (
+                <SongCard
+                  key={song.id}
+                  song={song}
+                  onPlay={() => playSong(song)}
+                />
+              ))}
+            </div>
+            {topSongs.length < topTotal && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="btn-secondary disabled:opacity-50"
+                >
+                  {loadingMore ? 'Cargando...' : 'Cargar más'}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      {isAuthenticated && recommendations.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-2xl font-bold">Descubre para ti</h2>
+            <span className="text-xs uppercase tracking-widest text-cyber-cyan bg-cyber-cyan/10 border border-cyber-cyan/30 px-3 py-1 rounded-full">
+              Recomendado
+            </span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {topSongs.map((song, index) => (
+            {recommendations.map((song) => (
               <SongCard
                 key={song.id}
                 song={song}
-                onPlay={() => playSong(song, index)}
+                onPlay={() => usePlayerStore.getState().playSong(song, recommendations)}
               />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       <section>
         <div className="flex items-center justify-between mb-5">

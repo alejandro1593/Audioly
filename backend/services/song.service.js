@@ -121,17 +121,18 @@ class SongService {
     return song;
   }
 
-  async getTopSongs(limit = 20) {
-    const songs = await Song.findAll({
+  async getTopSongs(limit = 20, offset = 0) {
+    const { count, rows } = await Song.findAndCountAll({
       include: [
         { model: Artist, as: 'artist', attributes: ['id', 'name'] },
         { model: Album, as: 'album', attributes: ['id', 'title', 'coverImage'] }
       ],
       order: [['plays', 'DESC']],
-      limit
+      limit: parseInt(limit),
+      offset: parseInt(offset)
     });
 
-    return songs;
+    return { total: count, songs: rows };
   }
 }
 

@@ -31,6 +31,9 @@ app.use('/api/playlists', require('./routes/playlist.routes'));
 app.use('/api/search', require('./routes/search.routes'));
 app.use('/api/podcasts', require('./routes/podcast.routes'));
 
+// Streaming de audio (Range headers)
+app.use('/api/stream', require('./routes/stream.routes'));
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
@@ -49,6 +52,10 @@ const startServer = async () => {
     // Sincroniza modelos (crea tablas si no existen).
     // Para cambios de esquema usar el seed o migraciones.
     await sequelize.sync();
+
+    // Migraciones manuales ligeras (sin alter completo, evita costo en Neon)
+    await sequelize.query('ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_collaborative BOOLEAN DEFAULT false;');
+
     console.log('Models synchronized');
 
     app.listen(PORT, () => {

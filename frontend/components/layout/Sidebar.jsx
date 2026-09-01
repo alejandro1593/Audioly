@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useLibraryStore } from '../../store/useLibraryStore'
+import { usePlayerStore } from '../../store/usePlayerStore'
 import api from '../../lib/api'
 import { Play, Search, Home, Plus, LogOut } from 'lucide-react'
 
@@ -42,6 +43,7 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     useAuthStore.getState().logout()
+    usePlayerStore.getState().clearQueue()
     router.push('/')
   }
 
@@ -114,7 +116,7 @@ export default function Sidebar() {
       {isAuthenticated && (
         <div className="border-t border-cyber-border pt-3 flex items-center justify-between gap-2">
           <Link
-            href="/"
+            href={user?.id ? `/user/${user.id}` : '/'}
             className="flex items-center gap-2 text-cyber-text hover:text-white transition-all min-w-0"
           >
             <div className="w-8 h-8 bg-gradient-cyber rounded-full flex items-center justify-center text-white text-sm shadow-neon shrink-0">

@@ -86,7 +86,7 @@ const seed = async () => {
         artistId: badbunny.id,
         albumId: album1.id,
         duration: 243,
-        url: 'https://example.com/audio/titi.mp3',
+        url: '/uploads/audio-demo-1.wav',
         genre: 'Reggaeton',
         plays: 450000000,
         isExplicit: true,
@@ -97,7 +97,7 @@ const seed = async () => {
         artistId: badbunny.id,
         albumId: album1.id,
         duration: 196,
-        url: 'https://example.com/audio/efecto.mp3',
+        url: '/uploads/audio-demo-2.wav',
         genre: 'Reggaeton',
         plays: 380000000,
         lyrics: 'Un efecto en ti, tiene lo mío...'
@@ -107,7 +107,7 @@ const seed = async () => {
         artistId: badbunny.id,
         albumId: album1.id,
         duration: 242,
-        url: 'https://example.com/audio/corriente.mp3',
+        url: '/uploads/audio-demo-3.wav',
         genre: 'Reggaeton',
         plays: 310000000
       },
@@ -116,7 +116,7 @@ const seed = async () => {
         artistId: rosalia.id,
         albumId: album2.id,
         duration: 181,
-        url: 'https://example.com/audio/motomami.mp3',
+        url: '/uploads/audio-demo-1.wav',
         genre: 'Pop',
         plays: 250000000,
         isExplicit: true,
@@ -126,7 +126,7 @@ const seed = async () => {
         title: 'DESPECHÁ',
         artistId: rosalia.id,
         duration: 157,
-        url: 'https://example.com/audio/despecha.mp3',
+        url: '/uploads/audio-demo-2.wav',
         genre: 'Pop',
         plays: 200000000
       }

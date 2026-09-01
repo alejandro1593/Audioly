@@ -8,8 +8,9 @@ class SongController {
   });
 
   getTopSongs = asyncHandler(async (req, res) => {
-    const songs = await SongService.getTopSongs(req.query.limit || 20);
-    res.json({ success: true, songs });
+    const { limit, offset } = req.query;
+    const result = await SongService.getTopSongs(limit || 20, offset || 0);
+    res.json({ success: true, ...result });
   });
 
   getSongById = asyncHandler(async (req, res) => {
@@ -18,7 +19,11 @@ class SongController {
   });
 
   createSong = asyncHandler(async (req, res) => {
-    const song = await SongService.createSong(req.body);
+    const songData = { ...req.body };
+    if (req.file) {
+      songData.url = `/uploads/${req.file.filename}`;
+    }
+    const song = await SongService.createSong(songData);
     res.status(201).json({ success: true, song });
   });
 
