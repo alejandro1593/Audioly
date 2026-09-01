@@ -30,6 +30,9 @@ app.use('/api/artists', require('./routes/artist.routes'));
 app.use('/api/playlists', require('./routes/playlist.routes'));
 app.use('/api/search', require('./routes/search.routes'));
 app.use('/api/podcasts', require('./routes/podcast.routes'));
+app.use('/api/jamendo', require('./routes/jamendo.routes'));
+app.use('/api/soundhelix', require('./routes/soundhelix.routes'));
+app.use('/api/spotify', require('./routes/spotify.routes'));
 
 // Streaming de audio (Range headers)
 app.use('/api/stream', require('./routes/stream.routes'));

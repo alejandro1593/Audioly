@@ -8,6 +8,7 @@ import SongCard from '../components/music/SongCard'
 import AlbumCard from '../components/music/AlbumCard'
 import ArtistCard from '../components/music/ArtistCard'
 import LoginPromptModal from '../components/ui/LoginPromptModal'
+import SpotifyEmbed from '../components/music/SpotifyEmbed'
 import { normalizeSongs } from '../lib/normalize'
 import Link from 'next/link'
 
@@ -22,6 +23,8 @@ export default function HomePage() {
   const [greeting, setGreeting] = useState('')
   const { isAuthenticated } = useAuthStore()
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [freeTracks, setFreeTracks] = useState([])
+  const [spotifyTracks, setSpotifyTracks] = useState([])
 
   const TOP_LIMIT = 8
 
@@ -33,15 +36,19 @@ export default function HomePage() {
 
     const fetchData = async () => {
       try {
-        const [songsRes, albumsRes, artistsRes] = await Promise.all([
+        const [songsRes, albumsRes, artistsRes, freeRes, spotifyRes] = await Promise.all([
           api.get('/songs/top', { params: { limit: TOP_LIMIT, offset: 0 } }),
           api.get('/albums'),
-          api.get('/artists', { params: { limit: 8 } })
+          api.get('/artists', { params: { limit: 8 } }),
+          api.get('/soundhelix/tracks', { params: { limit: 8 } }),
+          api.get('/spotify/tracks')
         ])
         setTopSongs(normalizeSongs(songsRes.data.songs))
         setTopTotal(songsRes.data.total || 0)
         setAlbums(albumsRes.data.albums)
         setArtists(artistsRes.data.artists)
+        setFreeTracks(freeRes.data.tracks || [])
+        setSpotifyTracks(spotifyRes.data.tracks || [])
       } catch (error) {
         console.error('Error fetching home data:', error)
       } finally {
@@ -186,6 +193,48 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      <section>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-2xl font-bold">Música libre de derechos</h2>
+          <span className="text-xs uppercase tracking-widest text-cyber-green bg-emerald-400/10 border border-emerald-400/30 px-3 py-1 rounded-full">
+            Royalty-free
+          </span>
+        </div>
+        <p className="text-cyber-text text-sm mb-4">Pistas de demostración libres para reproducir en tu web (SoundHelix).</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {freeTracks.map((track) => (
+            <SongCard
+              key={track.id}
+              song={track}
+              onPlay={() => usePlayerStore.getState().playSong(track, freeTracks)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {spotifyTracks.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-2xl font-bold">Éxitos de Spotify</h2>
+            <span className="text-xs uppercase tracking-widest text-green-400 bg-green-500/10 border border-green-500/30 px-3 py-1 rounded-full">
+              Player oficial
+            </span>
+          </div>
+          <p className="text-cyber-text text-sm mb-4">Reproducción directa con el reproductor oficial de Spotify. No requiere licencia.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {spotifyTracks.map((track) => (
+              <div key={track.id} className="card group overflow-hidden p-0">
+                <div className="p-3 pb-0 mb-0">
+                  <h3 className="font-bold truncate group-hover:text-cyber-cyan transition-colors">{track.title}</h3>
+                  <p className="text-cyber-text text-sm truncate mb-2">{track.artist?.name}</p>
+                </div>
+                <SpotifyEmbed trackId={track.trackId} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {showLoginPrompt && (
         <LoginPromptModal onClose={() => setShowLoginPrompt(false)} />
