@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/useAuthStore'
 import { usePlayerStore } from '../store/usePlayerStore'
 import { usePathname } from 'next/navigation'
 import Sidebar from '../components/layout/Sidebar'
+import MobileSidebar from '../components/layout/MobileSidebar'
 import Navbar from '../components/layout/Navbar'
 import Player from '../components/player/Player'
 
@@ -26,6 +27,7 @@ export default function ClientLayout({ children }) {
   const { isAuthenticated } = useAuthStore()
   const pathname = usePathname()
   const [loading, setLoading] = useState(true)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useAudioPlayer()
 
@@ -78,6 +80,10 @@ export default function ClientLayout({ children }) {
   }, [])
 
   useEffect(() => {
+    if (pathname) setMobileMenuOpen(false)
+  }, [pathname])
+
+  useEffect(() => {
     if (isAuthenticated) {
       useLibraryStore.getState().fetchLikedSongs()
     }
@@ -102,8 +108,9 @@ export default function ClientLayout({ children }) {
 
       <Toaster {...toastOptions} />
       <Sidebar />
+      <MobileSidebar open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
       <div className="md:ml-64 min-h-screen pb-player relative">
-        <Navbar />
+        <Navbar onMenuClick={() => setMobileMenuOpen(true)} />
         <main className="px-6 py-4">{children}</main>
       </div>
       <Player />

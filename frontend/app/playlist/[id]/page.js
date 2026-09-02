@@ -6,11 +6,16 @@ import api from '../../../lib/api'
 import Link from 'next/link'
 import { useRequireLoginToPlay } from '../../../hooks/useRequireLoginToPlay'
 import { useAuthStore } from '../../../store/useAuthStore'
+import { Pencil, Users, X, Check } from 'lucide-react'
 
 export default function PlaylistPage() {
   const { id } = useParams()
   const [playlist, setPlaylist] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [isCollaborative, setIsCollaborative] = useState(false)
   const { user } = useAuthStore()
   const { playIfLoggedIn, LoginPrompt } = useRequireLoginToPlay()
 
@@ -19,6 +24,9 @@ export default function PlaylistPage() {
       try {
         const { data } = await api.get(`/playlists/${id}`)
         setPlaylist(data.playlist)
+        setName(data.playlist.name || '')
+        setDescription(data.playlist.description || '')
+        setIsCollaborative(!!data.playlist.isCollaborative)
       } catch (error) {
         console.error('Error fetching playlist:', error)
       } finally {
@@ -57,6 +65,27 @@ export default function PlaylistPage() {
 
   const totalDuration = songs.reduce((sum, s) => sum + s.duration, 0)
 
+  const saveEdits = async () => {
+    try {
+      await api.put(`/playlists/${id}`, { name, description, isCollaborative })
+      const { data } = await api.get(`/playlists/${id}`)
+      setPlaylist(data.playlist)
+      setEditing(false)
+    } catch (error) {
+      console.error('Error saving playlist:', error)
+    }
+  }
+
+  const toggleCollaborative = async (e) => {
+    e.stopPropagation()
+    try {
+      await api.put(`/playlists/${id}`, { isCollaborative: !isCollaborative })
+      setIsCollaborative(!isCollaborative)
+    } catch (error) {
+      console.error('Error toggling collaborative:', error)
+    }
+  }
+
   return (
     <div>
       <div className="flex items-end gap-6 mb-8">
@@ -67,11 +96,30 @@ export default function PlaylistPage() {
             ♪
           </div>
         )}
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-xs uppercase font-bold text-cyber-text mb-1">Playlist</p>
-          <h1 className="text-5xl font-black mb-3">{playlist.name}</h1>
-          {playlist.description && (
-            <p className="text-cyber-text mb-2">{playlist.description}</p>
+          {editing ? (
+            <>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="text-3xl sm:text-4xl font-black bg-cyber-panel rounded-lg px-2 py-1 w-full mb-2 input-primary"
+              />
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="input-primary w-full mb-3"
+                rows={2}
+                placeholder="Descripción"
+              />
+            </>
+          ) : (
+            <>
+              <h1 className="text-4xl sm:text-5xl font-black mb-3 break-words">{playlist.name}</h1>
+              {playlist.description && (
+                <p className="text-cyber-text mb-2">{playlist.description}</p>
+              )}
+            </>
           )}
           <p className="flex items-center gap-2 text-cyber-text">
             <span className="text-white font-bold">{playlist.owner?.username}</span>
@@ -79,7 +127,38 @@ export default function PlaylistPage() {
             <span>{songs.length} canciones</span>
             <span>•</span>
             <span>{formatDuration(totalDuration)}</span>
+            {isCollaborative && (
+              <span className="flex items-center gap-1 text-xs bg-cyber-panel px-2 py-0.5 rounded-full text-cyber-cyan">
+                <Users size={12} /> Colaborativa
+              </span>
+            )}
           </p>
+          {isOwner && (
+            <div className="flex items-center gap-3 mt-4">
+              {editing ? (
+                <>
+                  <button onClick={saveEdits} className="flex items-center gap-1 px-4 py-2 rounded-lg bg-gradient-cyber text-white font-semibold text-sm">
+                    <Check size={16} /> Guardar
+                  </button>
+                  <button onClick={() => setEditing(false)} className="flex items-center gap-1 px-4 py-2 rounded-lg bg-cyber-panel text-cyber-text hover:text-white text-sm">
+                    <X size={16} /> Cancelar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setEditing(true)} className="flex items-center gap-1 px-4 py-2 rounded-lg bg-cyber-panel text-cyber-text hover:text-white text-sm">
+                    <Pencil size={15} /> Editar
+                  </button>
+                  <button
+                    onClick={toggleCollaborative}
+                    className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm transition-colors ${isCollaborative ? 'bg-cyber-purple/20 text-cyber-cyan' : 'bg-cyber-panel text-cyber-text hover:text-white'}`}
+                  >
+                    <Users size={15} /> {isCollaborative ? 'Colaborativa: sí' : 'Colaborativa: no'}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

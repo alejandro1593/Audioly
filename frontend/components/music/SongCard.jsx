@@ -3,14 +3,18 @@
 import { useState } from 'react'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { useLibraryStore } from '../../store/useLibraryStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import api from '../../lib/api'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
-import { Play, Heart, ListMusic, Plus, MoreHorizontal } from 'lucide-react'
+import { Play, Heart, ListMusic, Plus, MoreHorizontal, Library } from 'lucide-react'
 
 export default function SongCard({ song, onPlay }) {
   const { toggleLike } = useLibraryStore()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [playlistModal, setPlaylistModal] = useState(false)
+  const [userPlaylists, setUserPlaylists] = useState([])
+  const { isAuthenticated } = useAuthStore()
   const isLiked = useLibraryStore(state =>
     state.likedSongs.some(s => s.id === song.id)
   )
@@ -43,6 +47,27 @@ export default function SongCard({ song, onPlay }) {
     setMenuOpen(false)
     usePlayerStore.getState().addToQueue(song)
     toast.success('Añadida a la cola')
+  }
+
+  const openPlaylistModal = (e) => {
+    e.stopPropagation()
+    setMenuOpen(false)
+    api.get('/playlists?byUser=true')
+      .then(({ data }) => {
+        setUserPlaylists(data.playlists || [])
+        setPlaylistModal(true)
+      })
+      .catch((error) => toast.error(error.response?.data?.message || 'Error al cargar playlists'))
+  }
+
+  const addToPlaylist = async (playlistId) => {
+    try {
+      await api.post(`/playlists/${playlistId}/songs`, { songId: song.id })
+      toast.success('Añadida a la playlist')
+      setPlaylistModal(false)
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al añadir a la playlist')
+    }
   }
 
   return (
@@ -100,6 +125,14 @@ export default function SongCard({ song, onPlay }) {
             >
               <ListMusic size={16} className="text-cyber-purple" /> Añadir a la cola
             </button>
+            {isAuthenticated && (
+              <button
+                onClick={openPlaylistModal}
+                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-cyber-text hover:text-white hover:bg-cyber-dark transition-colors"
+              >
+                <Library size={16} className="text-cyber-green" /> Añadir a playlist
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -112,6 +145,35 @@ export default function SongCard({ song, onPlay }) {
       >
         {song.artist?.name}
       </Link>
+
+      {playlistModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+          <div className="bg-cyber-panel p-6 rounded-2xl w-96 border border-cyber-border shadow-neon" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-4">Añadir a playlist</h3>
+            {userPlaylists.length === 0 ? (
+              <p className="text-cyber-text mb-4">No tienes playlists. Crea una desde tu Biblioteca.</p>
+            ) : (
+              <div className="space-y-2 max-h-72 overflow-y-auto mb-4">
+                {userPlaylists.map((playlist) => (
+                  <button
+                    key={playlist.id}
+                    onClick={() => addToPlaylist(playlist.id)}
+                    className="w-full flex items-center gap-3 p-2 text-cyber-text hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                  >
+                    <div className="w-10 h-10 bg-gradient-cyber rounded-lg flex items-center justify-center text-white text-sm shrink-0">♪</div>
+                    <span className="truncate">{playlist.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-end">
+              <button onClick={() => setPlaylistModal(false)} className="text-cyber-text hover:text-white px-4 py-2">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

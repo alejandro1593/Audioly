@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowRight, Search } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Search, Menu } from 'lucide-react'
 
-export default function Navbar() {
+export default function Navbar({ onMenuClick }) {
   const [query, setQuery] = useState('')
   const router = useRouter()
 
@@ -18,6 +18,13 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-30 bg-cyber-dark/70 backdrop-blur-xl px-6 py-3 flex items-center gap-4 border-b border-cyber-border/50">
       <div className="flex items-center gap-2">
+        <button
+          onClick={onMenuClick}
+          className="md:hidden w-9 h-9 bg-cyber-panel border border-cyber-border rounded-full hover:text-cyber-cyan transition-all flex items-center justify-center"
+          title="Menú"
+        >
+          <Menu size={18} />
+        </button>
         <button
           onClick={() => router.back()}
           className="w-9 h-9 bg-cyber-panel border border-cyber-border rounded-full hover:border-cyber-purple hover:shadow-neon transition-all flex items-center justify-center"

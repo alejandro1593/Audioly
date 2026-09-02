@@ -5,11 +5,15 @@ import { useParams } from 'next/navigation'
 import api from '../../../lib/api'
 import AlbumCard from '../../../components/music/AlbumCard'
 import { useRequireLoginToPlay } from '../../../hooks/useRequireLoginToPlay'
+import { useAuthStore } from '../../../store/useAuthStore'
+import toast from 'react-hot-toast'
 
 export default function ArtistPage() {
   const { id } = useParams()
   const [artist, setArtist] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [following, setFollowing] = useState(false)
+  const { isAuthenticated } = useAuthStore()
   const { playIfLoggedIn, LoginPrompt } = useRequireLoginToPlay()
 
   useEffect(() => {
@@ -17,6 +21,7 @@ export default function ArtistPage() {
       try {
         const { data } = await api.get(`/artists/${id}`)
         setArtist(data.artist)
+        setFollowing(data.artist?.isFollowing || false)
       } catch (error) {
         console.error('Error fetching artist:', error)
       } finally {
@@ -41,6 +46,30 @@ export default function ArtistPage() {
   const playAlbum = (album) => {
     if (album.songs?.length) {
       playIfLoggedIn(album.songs[0], album.songs)
+    }
+  }
+
+  const handleFollow = async () => {
+    if (!isAuthenticated) {
+      window.location.href = '/login'
+      return
+    }
+    try {
+      if (following) {
+        await api.delete(`/artists/${id}/follow`)
+        setFollowing(false)
+        toast.success(`Dejaste de seguir a ${artist.name}`)
+      } else {
+        await api.post(`/artists/${id}/follow`)
+        setFollowing(true)
+        toast.success(`Siguiendo a ${artist.name}`)
+      }
+    } catch (error) {
+      if (error.response?.status === 400) {
+        toast.error(error.response.data?.message || 'Este artista no tiene cuenta para seguir')
+      } else {
+        toast.error('No se pudo actualizar el seguimiento')
+      }
     }
   }
 
@@ -73,7 +102,12 @@ export default function ArtistPage() {
           <button onClick={playAll} className="w-14 h-14 bg-gradient-cyber rounded-full flex items-center justify-center text-2xl text-white hover:scale-105 hover:shadow-neon transition-all shadow-xl">
             ▶
           </button>
-          <button className="btn-secondary text-sm">Seguir</button>
+          <button
+            onClick={handleFollow}
+            className={`text-sm ${following ? 'btn-secondary' : 'btn-primary'}`}
+          >
+            {following ? 'Siguiendo ✓' : 'Seguir'}
+          </button>
         </header>
 
         <section>

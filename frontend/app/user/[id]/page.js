@@ -5,24 +5,53 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import api from '../../../lib/api'
 import toast from 'react-hot-toast'
-import { ListMusic, Users } from 'lucide-react'
+import { ListMusic, Users, UserPlus, UserCheck } from 'lucide-react'
+import { useAuthStore } from '../../../store/useAuthStore'
 
 export default function UserProfilePage() {
   const { id } = useParams()
+  const { user: currentUser, isAuthenticated } = useAuthStore()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [following, setFollowing] = useState(false)
+  const [togglingFollow, setTogglingFollow] = useState(false)
 
   useEffect(() => {
     if (!id) return
     setLoading(true)
     api.get(`/users/${id}`)
-      .then((res) => setUser(res.data.user))
+      .then((res) => {
+        setUser(res.data.user)
+        setFollowing(!!res.data.user?.isFollowing)
+      })
       .catch((err) => {
         if (err.response?.status === 404) setNotFound(true)
       })
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleFollow = async () => {
+    if (!isAuthenticated) {
+      toast.error('Inicia sesión para seguir usuarios')
+      return
+    }
+    if (currentUser?.id === Number(id)) return
+    setTogglingFollow(true)
+    try {
+      if (following) {
+        await api.delete(`/auth/${id}/follow`)
+        setFollowing(false)
+      } else {
+        await api.post(`/auth/${id}/follow`)
+        setFollowing(true)
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No se pudo actualizar el seguimiento')
+    } finally {
+      setTogglingFollow(false)
+    }
+  }
 
   if (loading) return <div className="text-cyber-text animate-pulse">Cargando...</div>
   if (notFound || !user) return <div className="text-cyber-text">Usuario no encontrado</div>
@@ -44,6 +73,17 @@ export default function UserProfilePage() {
               <Users size={14} className="text-cyber-purple" /> {user.followingCount || 0} siguiendo
             </span>
           </div>
+          {currentUser?.id !== Number(id) && (
+            <button
+              onClick={handleFollow}
+              disabled={togglingFollow}
+              className={`mt-4 sm:mt-0 shrink-0 px-5 py-2 rounded-xl font-semibold text-sm transition-all disabled:opacity-50 ${
+                following ? 'bg-cyber-panel text-white hover:bg-white/10' : 'bg-gradient-cyber text-white shadow-glow'
+              }`}
+            >
+              {following ? <span className="flex items-center gap-2"><UserCheck size={16} /> Siguiendo</span> : <span className="flex items-center gap-2"><UserPlus size={16} /> Seguir</span>}
+            </button>
+          )}
         </div>
       </div>
 

@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { useLibraryStore } from '../../store/useLibraryStore'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import api from '../../lib/api'
-import { Play, Search, Home, Plus, LogOut } from 'lucide-react'
+import { Play, Search, Home, Plus, LogOut, Shield, UploadCloud } from 'lucide-react'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -71,6 +71,30 @@ export default function Sidebar() {
           )
         })}
       </nav>
+
+      {user?.role === 'admin' && (
+        <nav className="space-y-1 mb-6">
+          <Link
+            href="/admin"
+            className={`sidebar-link ${pathname === '/admin' ? 'sidebar-link-active' : ''}`}
+          >
+            <Shield size={20} className="text-cyber-cyan" />
+            Panel Admin
+          </Link>
+        </nav>
+      )}
+
+      {(user?.role === 'admin' || user?.role === 'artist') && (
+        <nav className="space-y-1 mb-6">
+          <Link
+            href="/upload"
+            className={`sidebar-link ${pathname === '/upload' ? 'sidebar-link-active' : ''}`}
+          >
+            <UploadCloud size={20} className="text-cyber-green" />
+            Subir canción
+          </Link>
+        </nav>
+      )}
 
       <div className="flex-1 overflow-y-auto px-2">
         <div className="flex items-center justify-between mb-4">

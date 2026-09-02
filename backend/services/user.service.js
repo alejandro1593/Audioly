@@ -1,9 +1,9 @@
-const { User, Song, Artist, Album, ListeningHistory, UserLikedSong, sequelize } = require('../models');
+const { User, Song, Artist, Album, ListeningHistory, UserLikedSong, UserFollow, sequelize } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Op } = require('sequelize');
 
 class UserService {
-  async getProfile(userId) {
+  async getProfile(userId, currentUserId = null) {
     const user = await User.findByPk(userId, {
       attributes: {
         exclude: ['password'],
@@ -29,6 +29,15 @@ class UserService {
 
     if (!user) {
       throw new ApiError(404, 'Usuario no encontrado');
+    }
+
+    if (currentUserId) {
+      const follow = await UserFollow.findOne({
+        where: { followerId: currentUserId, followingId: userId }
+      });
+      user.dataValues.isFollowing = !!follow;
+    } else {
+      user.dataValues.isFollowing = false;
     }
 
     return user;

@@ -21,7 +21,7 @@ class ArtistService {
     return { total: count, artists: rows };
   }
 
-  async getArtistById(id) {
+  async getArtistById(id, currentUserId = null) {
     const artist = await Artist.findByPk(id, {
       include: [
         {
@@ -44,7 +44,15 @@ class ArtistService {
       throw new ApiError(404, 'Artista no encontrado');
     }
 
-    return artist;
+    let isFollowing = false;
+    if (currentUserId && artist.userId && artist.userId !== currentUserId) {
+      const follow = await UserFollow.findOne({
+        where: { followerId: currentUserId, followingId: artist.userId }
+      });
+      isFollowing = !!follow;
+    }
+
+    return { ...artist.toJSON(), isFollowing };
   }
 
   async createArtist(artistData) {
@@ -85,6 +93,41 @@ class ArtistService {
     });
 
     return songs;
+  }
+
+  async followArtist(userId, artistId) {
+    const artist = await Artist.findByPk(artistId);
+    if (!artist) {
+      throw new ApiError(404, 'Artista no encontrado');
+    }
+    if (!artist.userId) {
+      throw new ApiError(400, 'Este artista no tiene cuenta de usuario para seguir');
+    }
+    if (userId === artist.userId) {
+      throw new ApiError(400, 'No puedes seguirte a ti mismo');
+    }
+
+    await UserFollow.findOrCreate({
+      where: { followerId: userId, followingId: artist.userId }
+    });
+
+    return { success: true };
+  }
+
+  async unfollowArtist(userId, artistId) {
+    const artist = await Artist.findByPk(artistId);
+    if (!artist) {
+      throw new ApiError(404, 'Artista no encontrado');
+    }
+    if (!artist.userId) {
+      throw new ApiError(400, 'Este artista no tiene cuenta de usuario para dejar de seguir');
+    }
+
+    await UserFollow.destroy({
+      where: { followerId: userId, followingId: artist.userId }
+    });
+
+    return { success: true };
   }
 }
 

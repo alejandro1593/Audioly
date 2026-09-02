@@ -3,7 +3,7 @@ const asyncHandler = require('../utils/asyncHandler');
 
 class UserController {
   getProfile = asyncHandler(async (req, res) => {
-    const user = await UserService.getProfile(req.params.id);
+    const user = await UserService.getProfile(req.params.id, req.user?.id);
     res.json({ success: true, user });
   });
 

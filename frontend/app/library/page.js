@@ -11,6 +11,7 @@ import Link from 'next/link'
 export default function LibraryPage() {
   const [tab, setTab] = useState('playlists')
   const [loading, setLoading] = useState(true)
+  const [likedPlaylists, setLikedPlaylists] = useState([])
   const { playlists, likedSongs, history } = useLibraryStore()
 
   useEffect(() => {
@@ -20,8 +21,11 @@ export default function LibraryPage() {
         await Promise.all([
           useLibraryStore.getState().fetchPlaylists(),
           useLibraryStore.getState().fetchLikedSongs(),
-          useLibraryStore.getState().fetchHistory()
+          useLibraryStore.getState().fetchHistory(),
+          api.get('/playlists/liked').then(({ data }) => setLikedPlaylists(data.playlists || []))
         ])
+      } catch (error) {
+        console.error('Error fetching library:', error)
       } finally {
         setLoading(false)
       }
@@ -66,7 +70,29 @@ export default function LibraryPage() {
       ) : (
         <div>
           {tab === 'playlists' && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div>
+              {likedPlaylists.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-xl font-bold mb-4">Playlists que te gustan</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {likedPlaylists.map((playlist) => (
+                      <Link key={playlist.id} href={`/playlist/${playlist.id}`} className="card group">
+                        <div className="mb-3">
+                          <div className="w-full aspect-square bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded flex items-center justify-center text-4xl">
+                            ♪
+                          </div>
+                        </div>
+                        <h3 className="font-bold truncate group-hover:underline">{playlist.name}</h3>
+                        <p className="text-cyber-text text-sm truncate">
+                          {playlist.owner?.username}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {playlists.map((playlist) => (
                 <Link key={playlist.id} href={`/playlist/${playlist.id}`} className="card group">
                   <div className="mb-3">
@@ -80,6 +106,7 @@ export default function LibraryPage() {
                   </p>
                 </Link>
               ))}
+              </div>
             </div>
           )}
 

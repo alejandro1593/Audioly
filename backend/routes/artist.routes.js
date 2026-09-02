@@ -8,6 +8,10 @@ router.get('/', artistController.getAllArtists);
 router.get('/:id', artistController.getArtistById);
 router.get('/:id/songs', artistController.getArtistSongs);
 
+// Follow / unfollow (usuario autenticado)
+router.post('/:id/follow', protect, artistController.followArtist);
+router.delete('/:id/follow', protect, artistController.unfollowArtist);
+
 // Admin/Artist routes
 router.post('/',
   protect,

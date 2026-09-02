@@ -8,7 +8,7 @@ class ArtistController {
   });
 
   getArtistById = asyncHandler(async (req, res) => {
-    const artist = await ArtistService.getArtistById(req.params.id);
+    const artist = await ArtistService.getArtistById(req.params.id, req.user?.id || null);
     res.json({ success: true, artist });
   });
 
@@ -30,6 +30,16 @@ class ArtistController {
   getArtistSongs = asyncHandler(async (req, res) => {
     const songs = await ArtistService.getArtistSongs(req.params.id);
     res.json({ success: true, songs });
+  });
+
+  followArtist = asyncHandler(async (req, res) => {
+    const result = await ArtistService.followArtist(req.user.id, req.params.id);
+    res.json({ success: true, ...result });
+  });
+
+  unfollowArtist = asyncHandler(async (req, res) => {
+    const result = await ArtistService.unfollowArtist(req.user.id, req.params.id);
+    res.json({ success: true, ...result });
   });
 }
 

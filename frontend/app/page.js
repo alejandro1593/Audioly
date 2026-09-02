@@ -25,6 +25,7 @@ export default function HomePage() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [freeTracks, setFreeTracks] = useState([])
   const [spotifyTracks, setSpotifyTracks] = useState([])
+  const [recentSongs, setRecentSongs] = useState([])
 
   const TOP_LIMIT = 8
 
@@ -76,6 +77,13 @@ export default function HomePage() {
     if (!isAuthenticated) return
     api.get('/users/recommendations', { params: { limit: 8 } })
       .then((res) => setRecommendations(normalizeSongs(res.data.songs || [])))
+      .catch(() => {})
+    api.get('/users/history', { params: { limit: 8 } })
+      .then((res) => {
+        const history = res.data.history || res.data.songs || []
+        const songs = history.map((entry) => entry.song).filter(Boolean)
+        setRecentSongs(normalizeSongs(songs))
+      })
       .catch(() => {})
   }, [isAuthenticated])
 
@@ -145,6 +153,29 @@ export default function HomePage() {
           </>
         )}
       </section>
+
+      {isAuthenticated && recentSongs.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-2xl font-bold">Recientes</h2>
+            <Link
+              href="/library"
+              className="text-sm text-cyber-cyan hover:underline"
+            >
+              Ver todo
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {recentSongs.map((song) => (
+              <SongCard
+                key={song.id}
+                song={song}
+                onPlay={() => usePlayerStore.getState().playSong(song, recentSongs)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {isAuthenticated && recommendations.length > 0 && (
         <section>
