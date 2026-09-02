@@ -222,14 +222,21 @@ export default function HomePage() {
             </span>
           </div>
           <p className="text-cyber-text text-sm mb-4">Reproducción directa con el reproductor oficial de Spotify. No requiere licencia.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {spotifyTracks.map((track) => (
-              <div key={track.id} className="card group overflow-hidden p-0">
-                <div className="p-3 pb-0 mb-0">
-                  <h3 className="font-bold truncate group-hover:text-cyber-cyan transition-colors">{track.title}</h3>
-                  <p className="text-cyber-text text-sm truncate mb-2">{track.artist?.name}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {spotifyTracks.map((track, index) => (
+              <div key={track.id} className="card group overflow-hidden p-0 flex flex-col">
+                <div className="flex items-center gap-3 p-3 pb-2">
+                  <span className="w-7 h-7 shrink-0 grid place-items-center rounded-lg bg-green-500/15 text-green-400 font-bold text-sm">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="font-bold truncate group-hover:text-cyber-cyan transition-colors leading-tight">{track.title}</h3>
+                    <p className="text-cyber-text text-xs truncate">{track.artist?.name}</p>
+                  </div>
                 </div>
-                <SpotifyEmbed trackId={track.trackId} />
+                <div className="px-3 pb-3 flex-1 flex items-center">
+                  <SpotifyEmbed trackId={track.trackId} style="compact" />
+                </div>
               </div>
             ))}
           </div>

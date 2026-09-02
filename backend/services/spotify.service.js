@@ -6,17 +6,17 @@
 // Lote fijo de éxitos con sus IDs de Spotify (sin búsqueda dinámica).
 // Para ampliar: añade una entrada con el track id de cualquier canción
 // (botón "Compartir > Copiar enlace" de Spotify contiene el /track/xxxxx).
+// Todos los IDs de abajo fueron verificados contra el embed de Spotify.
 const PLAYLIST = [
-  { title: 'Tití Me Preguntó', artist: 'Bad Bunny', genre: 'Reggaeton', trackId: '3YYeGKdfKdAZQeotl9J9Y3' },
-  { title: 'Efecto', artist: 'Bad Bunny', genre: 'Reggaeton', trackId: '5uZx8ZRKY6lVuEg4nqTexY' },
-  { title: 'La Corriente', artist: 'Bad Bunny', genre: 'Reggaeton', trackId: '30BFPMWCT7qYBhLdQ5vHMT' },
-  { title: 'DESPECHÁ', artist: 'Rosalía', genre: 'Pop', trackId: '5jDf7gtn6vAFHNqL9qIH7Z' },
-  { title: 'Los Ángeles', artist: 'Rosalía', genre: 'Pop', trackId: '7cgY9MkwTNC2XDtG1nT8dB' },
-  { title: 'Motomami', artist: 'Rosalía', genre: 'Pop', trackId: '5Zh5lRKHnbDFayVgA4BAym' },
+  { title: 'Tití Me Preguntó', artist: 'Bad Bunny', genre: 'Reggaeton', trackId: '1IHWl5LamUGEuP4ozKQSXZ' },
+  { title: 'Efecto', artist: 'Bad Bunny', genre: 'Reggaeton', trackId: '5Eax0qFko2dh7Rl2lYs3bx' },
+  { title: 'La Corriente', artist: 'Bad Bunny & Tony Dize', genre: 'Reggaeton', trackId: '1797zYiX4cKosMH836X9Gt' },
+  { title: 'DESPECHÁ', artist: 'Rosalía', genre: 'Pop', trackId: '5ildQOEKmJuWGl2vRkFdYc' },
+  { title: 'MOTOMAMI', artist: 'Rosalía', genre: 'Pop', trackId: '6ygEPi8EtVkUO0Xarcgs63' },
   { title: 'Blinding Lights', artist: 'The Weeknd', genre: 'Pop', trackId: '0VjIjW4GlUZAMYd2vXMi3b' },
-  { title: 'DÁKITI', artist: 'Bad Bunny & Jhayco', genre: 'Reggaeton', trackId: '4MzXwWMhyBbMu6wOjEAHIx' },
-  { title: 'YHLQMDLG', artist: 'Bad Bunny', genre: 'Reggaeton', trackId: '5y3yK0bWXK9j1lVsUjWl9Q' },
-  { title: 'Safari', artist: 'J Balvin, Pharrell, BIA', genre: 'Reggaeton', trackId: '456xE5FQVihG3mEA2ItJ0d' }
+  { title: 'DÁKITI', artist: 'Bad Bunny & Jhayco', genre: 'Reggaeton', trackId: '47EiUVwUp4C9fGccaPuUCS' },
+  { title: 'YHLQMDLG', artist: 'Bad Bunny', genre: 'Reggaeton', trackId: '41wtwzCZkXwpnakmwJ239F' },
+  { title: 'Safari', artist: 'J Balvin, Pharrell Williams & BIA', genre: 'Reggaeton', trackId: '456xBIOmLRoLzCvCzZrWge' }
 ];
 
 function buildTracks() {

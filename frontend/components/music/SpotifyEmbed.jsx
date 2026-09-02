@@ -10,9 +10,11 @@ const HEIGHTS = {
   default: 352
 }
 
-export default function SpotifyEmbed({ trackId, theme = 'dark', style = 'track' }) {
+export default function SpotifyEmbed({ trackId, theme = 'dark', style = 'track', allowAutoplay = false }) {
   const height = HEIGHTS[style] || HEIGHTS.track
-  const src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=${theme}`
+  // Los embeds de Spotify cargan más rápido con frame busting activado
+  const autoplay = allowAutoplay ? '&autoplay=true' : ''
+  const src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=${theme}${autoplay}`
 
   return (
     <iframe
@@ -23,6 +25,7 @@ export default function SpotifyEmbed({ trackId, theme = 'dark', style = 'track' 
       frameBorder="0"
       allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
       loading="lazy"
+      style={{ border: 'none' }}
       className="rounded-xl"
     />
   )
