@@ -5,12 +5,14 @@ import { useParams } from 'next/navigation'
 import api from '../../../lib/api'
 import Link from 'next/link'
 import { useRequireLoginToPlay } from '../../../hooks/useRequireLoginToPlay'
+import { useAuthStore } from '../../../store/useAuthStore'
 
 export default function AlbumPage() {
   const { id } = useParams()
   const [album, setAlbum] = useState(null)
   const [loading, setLoading] = useState(true)
   const { playIfLoggedIn, LoginPrompt } = useRequireLoginToPlay()
+  const { user } = useAuthStore()
 
   useEffect(() => {
     const fetchAlbum = async () => {
@@ -37,6 +39,15 @@ export default function AlbumPage() {
 
   const playSong = (song) => {
     playIfLoggedIn(song, album.songs)
+  }
+
+  const toggleSave = async () => {
+    try {
+      await api.post(`/albums/${id}/save`)
+      setAlbum((a) => ({ ...a, isSaved: !a.isSaved }))
+    } catch (error) {
+      console.error('Error toggling saved album:', error)
+    }
   }
 
   const totalDuration = album.songs?.reduce((sum, s) => sum + s.duration, 0) || 0
@@ -72,6 +83,17 @@ export default function AlbumPage() {
         <button onClick={playAll} className="w-14 h-14 bg-gradient-cyber rounded-full flex items-center justify-center text-2xl text-white hover:scale-105 hover:shadow-neon transition-transform shadow-xl">
           ▶
         </button>
+        {user && (
+          <button
+            onClick={toggleSave}
+            className={`w-12 h-12 rounded-full border-2 flex items-center justify-center text-2xl transition-all hover:scale-105 ${album.isSaved
+              ? 'bg-white text-black border-white'
+              : 'border-cyber-text text-cyber-text hover:border-white hover:text-white'}`}
+            title={album.isSaved ? 'Quitar de tu biblioteca' : 'Guardar en tu biblioteca'}
+          >
+            {album.isSaved ? '✓' : '+'}
+          </button>
+        )}
       </div>
 
       <div className="glass-panel rounded-2xl overflow-hidden">

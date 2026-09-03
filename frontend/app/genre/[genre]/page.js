@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import api from '../../../lib/api'
 import SongCard from '../../../components/music/SongCard'
 import { normalizeSongs } from '../../../lib/normalize'
-import { useAuthStore } from '../../../store/useAuthStore'
+import { useRequireLoginToPlay } from '../../../hooks/useRequireLoginToPlay'
 import { usePlayerStore } from '../../../store/usePlayerStore'
 
 export default function GenrePage() {
@@ -16,7 +16,7 @@ export default function GenrePage() {
   const [loading, setLoading] = useState(true)
   const [offset, setOffset] = useState(0)
   const [loadingMore, setLoadingMore] = useState(false)
-  const { isAuthenticated } = useAuthStore()
+  const { playIfLoggedIn, LoginPrompt } = useRequireLoginToPlay()
 
   const fetchSongs = async (reset = false) => {
     if (reset) {
@@ -50,7 +50,7 @@ export default function GenrePage() {
 
   const playAll = () => {
     if (songs.length) {
-      usePlayerStore.getState().playSong(songs[0], songs)
+      playIfLoggedIn(songs[0], songs)
     }
   }
 
@@ -81,10 +81,7 @@ export default function GenrePage() {
               <SongCard
                 key={song.id}
                 song={song}
-                onPlay={() => {
-                  if (!isAuthenticated) return usePlayerStore.getState().playSong(song, songs)
-                  usePlayerStore.getState().playSong(song, songs)
-                }}
+                onPlay={() => playIfLoggedIn(song, songs)}
               />
             ))}
           </div>
@@ -97,6 +94,8 @@ export default function GenrePage() {
           )}
         </>
       )}
+
+      {LoginPrompt}
     </div>
   )
 }

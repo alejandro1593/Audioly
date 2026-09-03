@@ -87,7 +87,7 @@ export const usePlayerStore = create(
       toggleMute: () => {
         const { isMuted, volume } = get()
         set({ isMuted: !isMuted })
-        if (!isMuted && volume === 0) set({ volume: 0.7 })
+        if (isMuted && volume === 0) set({ volume: 0.7 })
       },
 
       toggleShuffle: () => set((state) => ({ shuffle: !state.shuffle })),

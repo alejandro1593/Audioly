@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const albumController = require('../controllers/album.controller');
-const { protect, authorize } = require('../middlewares/auth.middleware');
+const { protect, authorize, optionalAuth } = require('../middlewares/auth.middleware');
 
 // Public routes
 router.get('/', albumController.getAllAlbums);
-router.get('/:id', albumController.getAlbumById);
+router.get('/saved', protect, albumController.getSavedAlbums);
+router.get('/:id', optionalAuth, albumController.getAlbumById);
 router.get('/:id/songs', albumController.getAlbumSongs);
+router.post('/:id/save', protect, albumController.toggleSaveAlbum);
 
 // Admin/Artist routes
 router.post('/',

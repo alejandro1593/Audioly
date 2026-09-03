@@ -1,37 +1,38 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const PlaylistSong = sequelize.define('PlaylistSong', {
+const SavedAlbum = sequelize.define('SavedAlbum', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  playlistId: {
+  userId: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'playlists',
+      model: 'users',
       key: 'id'
     }
   },
-  songId: {
+  albumId: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'songs',
+      model: 'albums',
       key: 'id'
     }
-  },
-  position: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0
   }
 }, {
-  tableName: 'playlist_songs',
+  tableName: 'saved_albums',
   timestamps: true,
-  updatedAt: false
+  updatedAt: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['user_id', 'album_id']
+    }
+  ]
 });
 
-module.exports = PlaylistSong;
+module.exports = SavedAlbum;

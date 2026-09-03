@@ -1,4 +1,4 @@
-const { Playlist, Song, Artist, Album, User, PlaylistSong, PlaylistLike, sequelize } = require('../models');
+const { Playlist, Song, Artist, Album, User, PlaylistSong, PlaylistLike, PlaylistCollaborator, sequelize } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 class PlaylistService {
@@ -36,7 +36,7 @@ class PlaylistService {
         {
           model: Song,
           as: 'songs',
-          through: { attributes: [] },
+          through: { attributes: ['position'] },
           include: [
             { model: Artist, as: 'artist', attributes: ['id', 'name'] },
             { model: Album, as: 'album', attributes: ['id', 'title', 'coverImage'] }
@@ -49,9 +49,35 @@ class PlaylistService {
       throw new ApiError(404, 'Playlist no encontrada');
     }
 
-    // Si la playlist es privada y el usuario no es el dueño
-    if (!playlist.isPublic && playlist.userId !== currentUserId) {
+    let isCollaborator = false;
+    if (currentUserId) {
+      const collab = await PlaylistCollaborator.findOne({
+        where: { playlistId: id, userId: currentUserId }
+      });
+      isCollaborator = !!collab;
+    }
+
+    // Si la playlist es privada y el usuario no es el dueño ni colaborador
+    if (!playlist.isPublic && playlist.userId !== currentUserId && !isCollaborator) {
       throw new ApiError(403, 'No tienes permisos para ver esta playlist');
+    }
+
+    const isOwner = playlist.userId === currentUserId;
+    playlist.dataValues.isCollaborator = isCollaborator;
+    playlist.dataValues.isOwner = isOwner;
+    playlist.dataValues.canEdit = isOwner || (playlist.isCollaborative && isCollaborator);
+
+    if (playlist.songs && playlist.songs.length) {
+      const needsOrder = playlist.songs.every((s) => !s.PlaylistSong || s.PlaylistSong.position === 0);
+      if (needsOrder) {
+        for (let i = 0; i < playlist.songs.length; i++) {
+          await PlaylistSong.update(
+            { position: i + 1 },
+            { where: { playlistId: id, songId: playlist.songs[i].id } }
+          );
+        }
+      }
+      playlist.songs.sort((a, b) => (a.PlaylistSong?.position || 0) - (b.PlaylistSong?.position || 0));
     }
 
     return playlist;
@@ -100,7 +126,7 @@ class PlaylistService {
     const playlist = await this.getPlaylistById(playlistId, userId);
 
     // Solo el dueño o colaboradores (si es colaborativa) pueden añadir
-    const canEdit = playlist.userId === userId || playlist.isCollaborative;
+    const canEdit = await this.canEditPlaylist(playlistId, userId, playlist);
     if (!canEdit) {
       throw new ApiError(403, 'No tienes permisos para añadir canciones a esta playlist');
     }
@@ -110,9 +136,13 @@ class PlaylistService {
       throw new ApiError(404, 'Canción no encontrada');
     }
 
-    await PlaylistSong.findOrCreate({
+    const [entry, created] = await PlaylistSong.findOrCreate({
       where: { playlistId, songId }
     });
+    if (created) {
+      const maxPos = await PlaylistSong.max('position', { where: { playlistId } });
+      await entry.update({ position: (maxPos || 0) + 1 });
+    }
 
     return this.getPlaylistById(playlistId, userId);
   }
@@ -120,7 +150,7 @@ class PlaylistService {
   async removeSong(playlistId, userId, songId) {
     const playlist = await this.getPlaylistById(playlistId, userId);
 
-    const canEdit = playlist.userId === userId || playlist.isCollaborative;
+    const canEdit = await this.canEditPlaylist(playlistId, userId, playlist);
     if (!canEdit) {
       throw new ApiError(403, 'No tienes permisos para quitar canciones de esta playlist');
     }
@@ -128,6 +158,39 @@ class PlaylistService {
     await PlaylistSong.destroy({
       where: { playlistId, songId }
     });
+
+    return this.getPlaylistById(playlistId, userId);
+  }
+
+  async reorderSongs(playlistId, userId, orderedSongIds) {
+    const playlist = await this.getPlaylistById(playlistId, userId);
+
+    const canEdit = await this.canEditPlaylist(playlistId, userId, playlist);
+    if (!canEdit) {
+      throw new ApiError(403, 'No tienes permisos para reordenar esta playlist');
+    }
+
+    if (!Array.isArray(orderedSongIds) || orderedSongIds.length === 0) {
+      throw new ApiError(400, 'Lista de canciones inválida');
+    }
+
+    const existing = await PlaylistSong.findAll({ where: { playlistId } });
+    const existingIds = new Set(existing.map((e) => e.songId));
+    const positions = orderedSongIds.filter((id) => existingIds.has(id));
+
+    for (let i = 0; i < positions.length; i++) {
+      await PlaylistSong.update(
+        { position: i + 1 },
+        { where: { playlistId, songId: positions[i] } }
+      );
+    }
+
+    let offset = positions.length;
+    for (const e of existing) {
+      if (!positions.includes(e.songId)) {
+        await PlaylistSong.update({ position: ++offset }, { where: { id: e.id } });
+      }
+    }
 
     return this.getPlaylistById(playlistId, userId);
   }
@@ -162,6 +225,62 @@ class PlaylistService {
     });
 
     return user.likedPlaylists;
+  }
+
+  async canEditPlaylist(playlistId, userId, playlist = null) {
+    if (!playlist) {
+      playlist = await Playlist.findByPk(playlistId);
+    }
+    if (playlist.userId === userId) return true;
+    if (!playlist.isCollaborative) return false;
+    const collaborator = await PlaylistCollaborator.findOne({
+      where: { playlistId, userId }
+    });
+    return !!collaborator;
+  }
+
+  async getCollaborators(playlistId, userId) {
+    const playlist = await Playlist.findByPk(playlistId, {
+      include: [{
+        association: 'collaborators',
+        attributes: ['id', 'username']
+      }]
+    });
+    if (!playlist) throw new ApiError(404, 'Playlist no encontrada');
+    if (playlist.userId !== userId) {
+      throw new ApiError(403, 'Solo el propietario puede ver los colaboradores');
+    }
+    return playlist.collaborators || [];
+  }
+
+  async addCollaborator(playlistId, userId, collaboratorId) {
+    const playlist = await Playlist.findByPk(playlistId);
+    if (!playlist) throw new ApiError(404, 'Playlist no encontrada');
+    if (playlist.userId !== userId) {
+      throw new ApiError(403, 'Solo el propietario puede añadir colaboradores');
+    }
+    if (collaboratorId === playlist.userId) {
+      throw new ApiError(400, 'El propietario no puede ser colaborador');
+    }
+    const target = await User.findByPk(collaboratorId);
+    if (!target) throw new ApiError(404, 'Usuario no encontrado');
+
+    await PlaylistCollaborator.findOrCreate({
+      where: { playlistId, userId: collaboratorId }
+    });
+    return this.getCollaborators(playlistId, userId);
+  }
+
+  async removeCollaborator(playlistId, userId, collaboratorId) {
+    const playlist = await Playlist.findByPk(playlistId);
+    if (!playlist) throw new ApiError(404, 'Playlist no encontrada');
+    if (playlist.userId !== userId) {
+      throw new ApiError(403, 'Solo el propietario puede quitar colaboradores');
+    }
+    await PlaylistCollaborator.destroy({
+      where: { playlistId, userId: collaboratorId }
+    });
+    return this.getCollaborators(playlistId, userId);
   }
 }
 

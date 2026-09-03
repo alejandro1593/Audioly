@@ -13,6 +13,7 @@ router.get('/history', userController.getHistory);
 
 // Get recommendations
 router.get('/recommendations', userController.getRecommendations);
+router.get('/me/top', userController.getTopItems);
 
 // Update profile
 router.put('/profile', userController.updateProfile);

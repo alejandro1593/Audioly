@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const PlaylistSong = sequelize.define('PlaylistSong', {
+const PlaylistCollaborator = sequelize.define('PlaylistCollaborator', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -15,23 +15,22 @@ const PlaylistSong = sequelize.define('PlaylistSong', {
       key: 'id'
     }
   },
-  songId: {
+  userId: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'songs',
+      model: 'users',
       key: 'id'
     }
-  },
-  position: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0
   }
 }, {
-  tableName: 'playlist_songs',
-  timestamps: true,
-  updatedAt: false
+  tableName: 'playlist_collaborators',
+  indexes: [
+    {
+      unique: true,
+      fields: ['playlist_id', 'user_id']
+    }
+  ]
 });
 
-module.exports = PlaylistSong;
+module.exports = PlaylistCollaborator;

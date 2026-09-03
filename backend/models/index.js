@@ -6,9 +6,11 @@ const Album = require('./Album');
 const Song = require('./Song');
 const Playlist = require('./Playlist');
 const PlaylistSong = require('./PlaylistSong');
+const PlaylistCollaborator = require('./PlaylistCollaborator');
 const UserLikedSong = require('./UserLikedSong');
 const UserFollow = require('./UserFollow');
 const PlaylistLike = require('./PlaylistLike');
+const SavedAlbum = require('./SavedAlbum');
 const ListeningHistory = require('./ListeningHistory');
 const Podcast = require('./Podcast');
 const PodcastEpisode = require('./PodcastEpisode');
@@ -49,6 +51,13 @@ User.belongsToMany(User, { through: UserFollow, foreignKey: 'followingId', as: '
 User.belongsToMany(Playlist, { through: PlaylistLike, foreignKey: 'userId', as: 'likedPlaylists' });
 Playlist.belongsToMany(User, { through: PlaylistLike, foreignKey: 'playlistId', as: 'likedBy' });
 
+// User <-> Playlist (Many-to-Many - Collaborators)
+Playlist.belongsToMany(User, { through: PlaylistCollaborator, foreignKey: 'playlistId', as: 'collaborators' });
+User.belongsToMany(Playlist, { through: PlaylistCollaborator, foreignKey: 'userId', as: 'collaboratingPlaylists' });
+
+User.belongsToMany(Album, { through: SavedAlbum, foreignKey: 'userId', as: 'savedAlbums' });
+Album.belongsToMany(User, { through: SavedAlbum, foreignKey: 'albumId', as: 'savedBy' });
+
 // User -> ListeningHistory (One-to-Many)
 User.hasMany(ListeningHistory, { foreignKey: 'userId', as: 'listeningHistory' });
 ListeningHistory.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -73,9 +82,11 @@ module.exports = {
   Song,
   Playlist,
   PlaylistSong,
+  PlaylistCollaborator,
   UserLikedSong,
   UserFollow,
   PlaylistLike,
+  SavedAlbum,
   ListeningHistory,
   Podcast,
   PodcastEpisode

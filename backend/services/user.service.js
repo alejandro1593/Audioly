@@ -172,6 +172,62 @@ class UserService {
       limit
     });
   }
+
+  // Top del usuario: canciones o artistas más escuchados
+  // timeRange: 'short_term' (4 semanas) | 'medium_term' (6 meses) | 'long_term' (todo)
+  async getTopItems(userId, type = 'tracks', timeRange = 'medium_term', limit = 10) {
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    let since = null;
+    if (timeRange === 'short_term') since = new Date(now - 28 * day);
+    else if (timeRange === 'medium_term') since = new Date(now - 182 * day);
+
+    const sinceClause = since ? 'AND lh.created_at >= :since' : '';
+    const sinceVal = since ? new Date(since).toISOString() : null;
+
+    if (type === 'artists') {
+      const rows = await sequelize.query(
+        `SELECT s.artist_id, COUNT(*) AS weight
+         FROM listening_history lh
+         JOIN songs s ON s.id = lh.song_id
+         WHERE lh.user_id = :userId ${sinceClause}
+         GROUP BY s.artist_id
+         ORDER BY weight DESC
+         LIMIT :limit`,
+        { replacements: { userId, since: sinceVal, limit: parseInt(limit) }, type: sequelize.QueryTypes.SELECT }
+      );
+      const ids = rows.map((r) => r.artist_id);
+      if (ids.length === 0) return [];
+      const artists = await Artist.findAll({ where: { id: { [Op.in]: ids } } });
+      return ids
+        .map((id) => artists.find((a) => a.id === id))
+        .filter(Boolean)
+        .map((artist, i) => ({ ...artist.dataValues, weight: rows[i].weight }));
+    }
+
+    const rows = await sequelize.query(
+      `SELECT lh.song_id, COUNT(*) AS weight
+       FROM listening_history lh
+       WHERE lh.user_id = :userId ${sinceClause}
+       GROUP BY lh.song_id
+       ORDER BY weight DESC
+       LIMIT :limit`,
+      { replacements: { userId, since: sinceVal, limit: parseInt(limit) }, type: sequelize.QueryTypes.SELECT }
+    );
+    const ids = rows.map((r) => r.song_id);
+    if (ids.length === 0) return [];
+    const songs = await Song.findAll({
+      where: { id: { [Op.in]: ids } },
+      include: [
+        { model: Artist, as: 'artist', attributes: ['id', 'name'] },
+        { model: Album, as: 'album', attributes: ['id', 'title', 'coverImage'] }
+      ]
+    });
+    return ids
+      .map((id) => songs.find((s) => s.id === id))
+      .filter(Boolean)
+      .map((song, i) => ({ ...song.dataValues, weight: rows[i].weight }));
+  }
 }
 
 module.exports = new UserService();

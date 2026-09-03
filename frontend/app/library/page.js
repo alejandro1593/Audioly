@@ -12,6 +12,7 @@ export default function LibraryPage() {
   const [tab, setTab] = useState('playlists')
   const [loading, setLoading] = useState(true)
   const [likedPlaylists, setLikedPlaylists] = useState([])
+  const [savedAlbums, setSavedAlbums] = useState([])
   const { playlists, likedSongs, history } = useLibraryStore()
 
   useEffect(() => {
@@ -22,7 +23,8 @@ export default function LibraryPage() {
           useLibraryStore.getState().fetchPlaylists(),
           useLibraryStore.getState().fetchLikedSongs(),
           useLibraryStore.getState().fetchHistory(),
-          api.get('/playlists/liked').then(({ data }) => setLikedPlaylists(data.playlists || []))
+          api.get('/playlists/liked').then(({ data }) => setLikedPlaylists(data.playlists || [])),
+          api.get('/albums/saved').then(({ data }) => setSavedAlbums(data.albums || []))
         ])
       } catch (error) {
         console.error('Error fetching library:', error)
@@ -35,6 +37,7 @@ export default function LibraryPage() {
 
   const tabs = [
     { id: 'playlists', label: 'Playlists' },
+    { id: 'albums', label: 'Álbumes' },
     { id: 'liked', label: 'Canciones' },
     { id: 'history', label: 'Historial' }
   ]
@@ -107,6 +110,33 @@ export default function LibraryPage() {
                 </Link>
               ))}
               </div>
+            </div>
+          )}
+
+          {tab === 'albums' && (
+            <div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {savedAlbums.map((album) => (
+                  <Link key={album.id} href={`/album/${album.id}`} className="card group">
+                    <div className="mb-3">
+                      {album.coverImage ? (
+                        <img src={album.coverImage} alt={album.title} className="w-full aspect-square object-cover rounded" />
+                      ) : (
+                        <div className="w-full aspect-square bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center text-4xl">
+                          ♪
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="font-bold truncate group-hover:underline">{album.title}</h3>
+                    <p className="text-cyber-text text-sm truncate">
+                      Álbum • {album.artist?.name}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+              {savedAlbums.length === 0 && (
+                <p className="text-cyber-text">Aún no tienes álbumes guardados</p>
+              )}
             </div>
           )}
 

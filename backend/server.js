@@ -58,6 +58,7 @@ const startServer = async () => {
 
     // Migraciones manuales ligeras (sin alter completo, evita costo en Neon)
     await sequelize.query('ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_collaborative BOOLEAN DEFAULT false;');
+    await sequelize.query('ALTER TABLE playlist_songs ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0;');
 
     console.log('Models synchronized');
 

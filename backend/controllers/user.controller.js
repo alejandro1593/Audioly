@@ -33,6 +33,16 @@ class UserController {
     const songs = await UserService.getRecommendations(req.user.id, limit);
     res.json({ success: true, songs });
   });
+
+  getTopItems = asyncHandler(async (req, res) => {
+    const type = req.query.type === 'artists' ? 'artists' : 'tracks';
+    const timeRange = ['short_term', 'medium_term', 'long_term'].includes(req.query.time_range)
+      ? req.query.time_range
+      : 'medium_term';
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const items = await UserService.getTopItems(req.user.id, type, timeRange, limit);
+    res.json({ success: true, items, type, time_range: timeRange });
+  });
 }
 
 module.exports = new UserController();

@@ -38,6 +38,11 @@ class PlaylistController {
     res.json({ success: true, playlist });
   });
 
+  reorderSongs = asyncHandler(async (req, res) => {
+    const playlist = await PlaylistService.reorderSongs(req.params.id, req.user.id, req.body.songIds);
+    res.json({ success: true, playlist });
+  });
+
   toggleLike = asyncHandler(async (req, res) => {
     const result = await PlaylistService.toggleLike(req.params.id, req.user.id);
     res.json({ success: true, ...result });
@@ -46,6 +51,21 @@ class PlaylistController {
   getLikedPlaylists = asyncHandler(async (req, res) => {
     const playlists = await PlaylistService.getLikedPlaylists(req.user.id);
     res.json({ success: true, playlists });
+  });
+
+  getCollaborators = asyncHandler(async (req, res) => {
+    const collaborators = await PlaylistService.getCollaborators(req.params.id, req.user.id);
+    res.json({ success: true, collaborators });
+  });
+
+  addCollaborator = asyncHandler(async (req, res) => {
+    const collaborators = await PlaylistService.addCollaborator(req.params.id, req.user.id, req.body.userId);
+    res.json({ success: true, collaborators });
+  });
+
+  removeCollaborator = asyncHandler(async (req, res) => {
+    const collaborators = await PlaylistService.removeCollaborator(req.params.id, req.user.id, req.params.collaboratorId);
+    res.json({ success: true, collaborators });
   });
 }
 

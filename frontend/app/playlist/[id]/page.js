@@ -6,7 +6,7 @@ import api from '../../../lib/api'
 import Link from 'next/link'
 import { useRequireLoginToPlay } from '../../../hooks/useRequireLoginToPlay'
 import { useAuthStore } from '../../../store/useAuthStore'
-import { Pencil, Users, X, Check } from 'lucide-react'
+import { Pencil, Users, X, Check, UserPlus, ChevronUp, ChevronDown } from 'lucide-react'
 
 export default function PlaylistPage() {
   const { id } = useParams()
@@ -16,6 +16,8 @@ export default function PlaylistPage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [isCollaborative, setIsCollaborative] = useState(false)
+  const [collaborators, setCollaborators] = useState([])
+  const [collabId, setCollabId] = useState('')
   const { user } = useAuthStore()
   const { playIfLoggedIn, LoginPrompt } = useRequireLoginToPlay()
 
@@ -27,6 +29,9 @@ export default function PlaylistPage() {
         setName(data.playlist.name || '')
         setDescription(data.playlist.description || '')
         setIsCollaborative(!!data.playlist.isCollaborative)
+        if (user?.id === data.playlist.userId) {
+          fetchCollaborators()
+        }
       } catch (error) {
         console.error('Error fetching playlist:', error)
       } finally {
@@ -34,7 +39,8 @@ export default function PlaylistPage() {
       }
     }
     fetchPlaylist()
-  }, [id])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user?.id])
 
   if (loading) return <div className="text-cyber-text">Cargando...</div>
   if (!playlist) return <div className="text-cyber-text">Playlist no encontrada</div>
@@ -60,6 +66,50 @@ export default function PlaylistPage() {
       setPlaylist(data.playlist)
     } catch (error) {
       console.error('Error removing song:', error)
+    }
+  }
+
+  const moveSong = async (index, direction) => {
+    const list = [...(playlist.songs || [])]
+    const target = index + direction
+    if (target < 0 || target >= list.length) return
+    ;[list[index], list[target]] = [list[target], list[index]]
+    try {
+      const { data } = await api.put(`/playlists/${id}/reorder`, { songIds: list.map((s) => s.id) })
+      setPlaylist(data.playlist)
+    } catch (error) {
+      console.error('Error reordering:', error)
+    }
+  }
+
+  const fetchCollaborators = async () => {
+    try {
+      const { data } = await api.get(`/playlists/${id}/collaborators`)
+      setCollaborators(data.collaborators || [])
+    } catch (error) {
+      console.error('Error fetching collaborators:', error)
+    }
+  }
+
+  const addCollaborator = async (e) => {
+    e.preventDefault()
+    if (!collabId.trim()) return
+    try {
+      await api.post(`/playlists/${id}/collaborators`, { userId: collabId })
+      setCollabId('')
+      fetchCollaborators()
+    } catch (error) {
+      console.error('Error adding collaborator:', error)
+    }
+  }
+
+  const removeCollaborator = async (collabId, e) => {
+    e.stopPropagation()
+    try {
+      await api.delete(`/playlists/${id}/collaborators/${collabId}`)
+      fetchCollaborators()
+    } catch (error) {
+      console.error('Error removing collaborator:', error)
     }
   }
 
@@ -159,6 +209,38 @@ export default function PlaylistPage() {
               )}
             </div>
           )}
+
+          {isOwner && isCollaborative && collaborators.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2 items-center">
+              <span className="text-cyber-text text-xs uppercase font-bold mr-1">Colaboradores:</span>
+              {collaborators.map((collab) => (
+                <span key={collab.id} className="inline-flex items-center gap-1 bg-cyber-panel px-2 py-1 rounded-full text-sm text-white">
+                  {collab.username}
+                  <button
+                    onClick={(ev) => removeCollaborator(collab.id, ev)}
+                    className="text-cyber-text hover:text-rose-400 transition-colors"
+                    title="Quitar colaborador"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {isOwner && isCollaborative && (
+            <form onSubmit={addCollaborator} className="mt-3 flex items-center gap-2">
+              <UserPlus size={16} className="text-cyber-cyan shrink-0" />
+              <input
+                type="text"
+                value={collabId}
+                onChange={(e) => setCollabId(e.target.value)}
+                placeholder="ID de usuario a añadir"
+                className="input-primary w-48 text-sm"
+              />
+              <button type="submit" className="btn-primary text-sm">Añadir</button>
+            </form>
+          )}
         </div>
       </div>
 
@@ -209,10 +291,31 @@ export default function PlaylistPage() {
               </div>
               <div className="flex items-center gap-3">
                 <span>{formatDuration(song.duration)}</span>
-                {isOwner && (
+                {(playlist.canEdit ?? isOwner) && (
+                  <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); moveSong(index, -1) }}
+                      disabled={index === 0}
+                      className="text-cyber-text hover:text-white disabled:opacity-30"
+                      title="Subir"
+                    >
+                      <ChevronUp size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); moveSong(index, 1) }}
+                      disabled={index === songs.length - 1}
+                      className="text-cyber-text hover:text-white disabled:opacity-30"
+                      title="Bajar"
+                    >
+                      <ChevronDown size={16} />
+                    </button>
+                  </div>
+                )}
+                {(playlist.canEdit ?? isOwner) && (
                   <button
                     onClick={(e) => removeSong(song.id, e)}
-                    className="opacity-0 group-hover:opacity-100 text-cyber-text hover:text-white"
+                    className={`opacity-0 transition-opacity text-cyber-text hover:text-white ${(playlist.canEdit ?? isOwner) ? 'group-hover:opacity-100' : ''}`}
+                    title="Quitar de la playlist"
                   >
                     ✕
                   </button>

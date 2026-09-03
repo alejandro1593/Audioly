@@ -1,4 +1,4 @@
-const { Album, Artist, Song } = require('../models');
+const { Album, Artist, Song, SavedAlbum, User } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Op } = require('sequelize');
 
@@ -26,7 +26,7 @@ class AlbumService {
     return { total: count, albums: rows };
   }
 
-  async getAlbumById(id) {
+  async getAlbumById(id, currentUserId) {
     const album = await Album.findByPk(id, {
       include: [
         { model: Artist, as: 'artist', attributes: ['id', 'name', 'image'] },
@@ -42,6 +42,11 @@ class AlbumService {
 
     if (!album) {
       throw new ApiError(404, 'Álbum no encontrado');
+    }
+
+    if (currentUserId) {
+      const saved = await SavedAlbum.findOne({ where: { albumId: id, userId: currentUserId } });
+      album.dataValues.isSaved = !!saved;
     }
 
     return album;
@@ -73,6 +78,40 @@ class AlbumService {
   async getAlbumSongs(id) {
     const album = await this.getAlbumById(id);
     return album.songs;
+  }
+
+  async isAlbumSaved(albumId, userId) {
+    const found = await SavedAlbum.findOne({ where: { albumId, userId } });
+    return !!found;
+  }
+
+  async toggleSaveAlbum(albumId, userId) {
+    const album = await Album.findByPk(albumId);
+    if (!album) {
+      throw new ApiError(404, 'Álbum no encontrado');
+    }
+    const existing = await SavedAlbum.findOne({ where: { albumId, userId } });
+    if (existing) {
+      await existing.destroy();
+      return { saved: false };
+    }
+    await SavedAlbum.create({ albumId, userId });
+    return { saved: true };
+  }
+
+  async getSavedAlbums(userId, limit = 20) {
+    const user = await User.findByPk(userId, {
+      include: [{
+        association: 'savedAlbums',
+        include: [
+          { model: Artist, as: 'artist', attributes: ['id', 'name'] }
+        ]
+      }]
+    });
+    if (!user) return [];
+    const albums = user.savedAlbums || [];
+    const ordered = albums.slice(-limit).reverse();
+    return ordered;
   }
 }
 

@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { useLibraryStore } from '../../store/useLibraryStore'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import api from '../../lib/api'
-import { Play, Search, Home, Plus, LogOut, Shield, UploadCloud } from 'lucide-react'
+import { Play, Search, Home, Plus, LogOut, Shield, UploadCloud, TrendingUp } from 'lucide-react'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -26,7 +26,8 @@ export default function Sidebar() {
   const links = [
     { href: '/', label: 'Inicio', icon: Home },
     { href: '/search', label: 'Buscar', icon: Search },
-    { href: '/library', label: 'Tu Biblioteca', icon: Play }
+    { href: '/library', label: 'Tu Biblioteca', icon: Play },
+    { href: '/top', label: 'Tu Top', icon: TrendingUp }
   ]
 
   const createPlaylist = async () => {

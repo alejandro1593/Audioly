@@ -23,9 +23,10 @@ export default function MobileSidebar({ open, onClose }) {
   ]
 
   const createPlaylist = async () => {
-    if (!playlistName.trim()) return
+    const name = playlistName.trim() || window.prompt('Nombre de la playlist')
+    if (!name) return
     try {
-      await api.post('/playlists', { name: playlistName, isPublic: true })
+      await api.post('/playlists', { name, isPublic: true })
       setPlaylistName('')
       useLibraryStore.getState().fetchPlaylists()
     } catch (error) {

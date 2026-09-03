@@ -14,6 +14,11 @@ router.get('/', playlistController.getAllPlaylists);
 // Get liked playlists by current user
 router.get('/liked', playlistController.getLikedPlaylists);
 
+// Collaborators
+router.get('/:id/collaborators', playlistController.getCollaborators);
+router.post('/:id/collaborators', playlistController.addCollaborator);
+router.delete('/:id/collaborators/:collaboratorId', playlistController.removeCollaborator);
+
 // Get single playlist
 router.get('/:id', playlistController.getPlaylistById);
 
@@ -31,5 +36,8 @@ router.post('/:id/songs', playlistController.addSong);
 
 // Remove song from playlist
 router.delete('/:id/songs/:songId', playlistController.removeSong);
+
+// Reorder songs in playlist
+router.put('/:id/reorder', playlistController.reorderSongs);
 
 module.exports = router;

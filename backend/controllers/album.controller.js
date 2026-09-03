@@ -8,7 +8,7 @@ class AlbumController {
   });
 
   getAlbumById = asyncHandler(async (req, res) => {
-    const album = await AlbumService.getAlbumById(req.params.id);
+    const album = await AlbumService.getAlbumById(req.params.id, req.user?.id);
     res.json({ success: true, album });
   });
 
@@ -30,6 +30,16 @@ class AlbumController {
   getAlbumSongs = asyncHandler(async (req, res) => {
     const songs = await AlbumService.getAlbumSongs(req.params.id);
     res.json({ success: true, songs });
+  });
+
+  toggleSaveAlbum = asyncHandler(async (req, res) => {
+    const result = await AlbumService.toggleSaveAlbum(req.params.id, req.user.id);
+    res.json({ success: true, ...result });
+  });
+
+  getSavedAlbums = asyncHandler(async (req, res) => {
+    const albums = await AlbumService.getSavedAlbums(req.user.id, req.query.limit);
+    res.json({ success: true, albums });
   });
 }
 
