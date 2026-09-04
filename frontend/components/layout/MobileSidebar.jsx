@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { useLibraryStore } from '../../store/useLibraryStore'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import api from '../../lib/api'
-import { Play, Search, Home, Plus, LogOut, X, Shield, UploadCloud } from 'lucide-react'
+import { Play, Search, Home, Plus, LogOut, X, Shield, UploadCloud, TrendingUp, Sparkles } from 'lucide-react'
 
 export default function MobileSidebar({ open, onClose }) {
   const pathname = usePathname()
@@ -19,7 +19,9 @@ export default function MobileSidebar({ open, onClose }) {
   const links = [
     { href: '/', label: 'Inicio', icon: Home },
     { href: '/search', label: 'Buscar', icon: Search },
-    { href: '/library', label: 'Tu Biblioteca', icon: Play }
+    { href: '/library', label: 'Tu Biblioteca', icon: Play },
+    { href: '/top', label: 'Tu Top', icon: TrendingUp },
+    { href: '/recap', label: 'Tu Recap', icon: Sparkles }
   ]
 
   const createPlaylist = async () => {

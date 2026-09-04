@@ -43,6 +43,11 @@ class UserController {
     const items = await UserService.getTopItems(req.user.id, type, timeRange, limit);
     res.json({ success: true, items, type, time_range: timeRange });
   });
+
+  getRecap = asyncHandler(async (req, res) => {
+    const result = await UserService.getRecap(req.user.id);
+    res.json(result);
+  });
 }
 
 module.exports = new UserController();

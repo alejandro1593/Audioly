@@ -228,6 +228,132 @@ class UserService {
       .filter(Boolean)
       .map((song, i) => ({ ...song.dataValues, weight: rows[i].weight }));
   }
+
+  // Recap estilo "Wrapped": resumen anual/personal del usuario
+  async getRecap(userId) {
+    const [stats] = await sequelize.query(
+      `SELECT COUNT(*)::int AS plays,
+              COUNT(DISTINCT lh.song_id)::int AS "uniqueSongs",
+              COUNT(DISTINCT s.artist_id)::int AS "uniqueArtists",
+              COALESCE(SUM(s.duration), 0)::int AS "totalSeconds"
+       FROM listening_history lh
+       JOIN songs s ON s.id = lh.song_id
+       WHERE lh.user_id = :userId`,
+      { replacements: { userId }, type: sequelize.QueryTypes.SELECT }
+    );
+
+    if (!stats.plays) {
+      return { isEmpty: true, recap: null };
+    }
+
+    const topSongRows = await sequelize.query(
+      `SELECT lh.song_id, COUNT(*)::int AS count
+       FROM listening_history lh
+       WHERE lh.user_id = :userId
+       GROUP BY lh.song_id
+       ORDER BY count DESC
+       LIMIT 5`,
+      { replacements: { userId }, type: sequelize.QueryTypes.SELECT }
+    );
+    const topSongIds = topSongRows.map((r) => r.song_id);
+    const topSongsRaw = await Song.findAll({
+      where: { id: { [Op.in]: topSongIds } },
+      include: [
+        { model: Artist, as: 'artist', attributes: ['id', 'name'] },
+        { model: Album, as: 'album', attributes: ['id', 'title', 'coverImage'] }
+      ]
+    });
+    const topSongs = topSongIds
+      .map((id) => topSongsRaw.find((s) => s.id === id))
+      .filter(Boolean)
+      .map((song, i) => ({ ...song.dataValues, times: topSongRows[i].count }));
+
+    const topArtistRows = await sequelize.query(
+      `SELECT s.artist_id, COUNT(*)::int AS count
+       FROM listening_history lh
+       JOIN songs s ON s.id = lh.song_id
+       WHERE lh.user_id = :userId
+       GROUP BY s.artist_id
+       ORDER BY count DESC
+       LIMIT 5`,
+      { replacements: { userId }, type: sequelize.QueryTypes.SELECT }
+    );
+    const topArtistIds = topArtistRows.map((r) => r.artist_id);
+    const topArtistsRaw = await Artist.findAll({ where: { id: { [Op.in]: topArtistIds } } });
+    const topArtists = topArtistIds
+      .map((id) => topArtistsRaw.find((a) => a.id === id))
+      .filter(Boolean)
+      .map((artist, i) => ({ ...artist.dataValues, times: topArtistRows[i].count }));
+
+    const topGenresRows = await sequelize.query(
+      `SELECT s.genre, COUNT(*)::int AS count
+       FROM listening_history lh
+       JOIN songs s ON s.id = lh.song_id
+       WHERE lh.user_id = :userId AND s.genre IS NOT NULL AND s.genre <> ''
+       GROUP BY s.genre
+       ORDER BY count DESC
+       LIMIT 5`,
+      { replacements: { userId }, type: sequelize.QueryTypes.SELECT }
+    );
+
+    const monthsRows = await sequelize.query(
+      `SELECT to_char(lh.created_at, 'YYYY-MM') AS month, COUNT(*)::int AS count
+       FROM listening_history lh
+       WHERE lh.user_id = :userId AND lh.created_at >= NOW() - INTERVAL '6 months'
+       GROUP BY month
+       ORDER BY month`,
+      { replacements: { userId }, type: sequelize.QueryTypes.SELECT }
+    );
+
+    const [dayTimes] = await sequelize.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE EXTRACT(HOUR FROM lh.created_at) < 6)::int AS night,
+         COUNT(*) FILTER (WHERE EXTRACT(HOUR FROM lh.created_at) BETWEEN 6 AND 11)::int AS morning,
+         COUNT(*) FILTER (WHERE EXTRACT(HOUR FROM lh.created_at) BETWEEN 12 AND 17)::int AS afternoon,
+         COUNT(*) FILTER (WHERE EXTRACT(HOUR FROM lh.created_at) >= 18)::int AS evening
+       FROM listening_history lh
+       WHERE lh.user_id = :userId`,
+      { replacements: { userId }, type: sequelize.QueryTypes.SELECT }
+    );
+
+    const badges = [];
+    const nightPct = stats.plays ? (dayTimes.night / stats.plays) * 100 : 0;
+    const morningPct = stats.plays ? (dayTimes.morning / stats.plays) * 100 : 0;
+    const eveningPct = stats.plays ? (dayTimes.evening / stats.plays) * 100 : 0;
+
+    if (topSongs.length && topSongs[0].times >= 3) {
+      badges.push({ icon: '🔁', title: 'Bucle infinito', description: `Reprodujiste "${topSongs[0].title}" ${topSongs[0].times} veces` });
+    }
+    if (nightPct >= 25) {
+      badges.push({ icon: '🦉', title: 'Noctámbulo', description: `${Math.round(nightPct)}% de tu música fue de madrugada` });
+    }
+    if (morningPct >= 40) {
+      badges.push({ icon: '☀️', title: 'Mañanero', description: `${Math.round(morningPct)}% de tus plays antes del mediodía` });
+    }
+    if (eveningPct >= 40) {
+      badges.push({ icon: '🎉', title: 'Fiesta', description: `${Math.round(eveningPct)}% de tu música en la noche` });
+    }
+    if (stats.uniqueArtists >= 3 && stats.uniqueArtists >= stats.plays * 0.6) {
+      badges.push({ icon: '🧭', title: 'Explorador', description: `Descubriste ${stats.uniqueArtists} artistas distintos` });
+    }
+    badges.push({ icon: '🎧', title: 'Oyente leal', description: `${stats.plays} reproducciones registradas` });
+
+    return {
+      isEmpty: false,
+      recap: {
+        totalSeconds: stats.totalSeconds,
+        plays: stats.plays,
+        uniqueSongs: stats.uniqueSongs,
+        uniqueArtists: stats.uniqueArtists,
+        topSongs,
+        topArtists,
+        topGenres: topGenresRows,
+        months: monthsRows,
+        dayTimes,
+        badges
+      }
+    };
+  }
 }
 
 module.exports = new UserService();
