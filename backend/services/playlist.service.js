@@ -1,5 +1,6 @@
 const { Playlist, Song, Artist, Album, User, PlaylistSong, PlaylistLike, PlaylistCollaborator, sequelize } = require('../models');
 const ApiError = require('../utils/ApiError');
+const jwt = require('jsonwebtoken');
 
 class PlaylistService {
   async getAllPlaylists({ userId, limit, offset }) {
@@ -281,6 +282,66 @@ class PlaylistService {
       where: { playlistId, userId: collaboratorId }
     });
     return this.getCollaborators(playlistId, userId);
+  }
+
+  async generateShareToken(playlistId, userId) {
+    const playlist = await Playlist.findByPk(playlistId);
+    if (!playlist) throw new ApiError(404, 'Playlist no encontrada');
+    if (playlist.userId !== userId) {
+      throw new ApiError(403, 'Solo el propietario puede compartir esta playlist');
+    }
+    const token = jwt.sign(
+      { playlistId },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+    return token;
+  }
+
+  async getSharedPlaylist(token) {
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      throw new ApiError(400, 'Enlace de playlist inválido o expirado');
+    }
+    if (!decoded.playlistId) {
+      throw new ApiError(400, 'Enlace de playlist inválido');
+    }
+
+    const playlist = await Playlist.findByPk(decoded.playlistId, {
+      include: [
+        { model: User, as: 'owner', attributes: ['id', 'username', 'avatar'] },
+        {
+          model: Song,
+          as: 'songs',
+          through: { attributes: ['position'] },
+          include: [
+            { model: Artist, as: 'artist', attributes: ['id', 'name'] },
+            { model: Album, as: 'album', attributes: ['id', 'title', 'coverImage'] }
+          ]
+        }
+      ]
+    });
+
+    if (!playlist) {
+      throw new ApiError(404, 'Playlist no encontrada');
+    }
+
+    if (playlist.songs && playlist.songs.length) {
+      const needsOrder = playlist.songs.every((s) => !s.PlaylistSong || s.PlaylistSong.position === 0);
+      if (needsOrder) {
+        for (let i = 0; i < playlist.songs.length; i++) {
+          await PlaylistSong.update(
+            { position: i + 1 },
+            { where: { playlistId: playlist.id, songId: playlist.songs[i].id } }
+          );
+        }
+      }
+      playlist.songs.sort((a, b) => (a.PlaylistSong?.position || 0) - (b.PlaylistSong?.position || 0));
+    }
+
+    return playlist;
   }
 }
 

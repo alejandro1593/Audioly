@@ -52,7 +52,57 @@ class ArtistService {
       isFollowing = !!follow;
     }
 
-    return { ...artist.toJSON(), isFollowing };
+    // Top canciones: las más escuchadas del artista
+    const topSongs = await Song.findAll({
+      where: { artistId: id },
+      include: [
+        { model: Album, as: 'album', attributes: ['id', 'title', 'coverImage'] }
+      ],
+      order: [['plays', 'DESC']],
+      limit: 5
+    });
+
+    // Artistas relacionados: comparten género de canciones/álbumes
+    const myGenres = await Album.findAll({
+      where: { artistId: id },
+      attributes: ['genre']
+    });
+    const genreSet = new Set(await Song.findAll({
+      where: { artistId: id },
+      attributes: ['genre']
+    }).then((rows) => rows.map((s) => s.genre).filter(Boolean)));
+    myGenres.forEach((a) => a.genre && genreSet.add(a.genre));
+    genreSet.delete(null);
+    genreSet.delete('');
+
+    let relatedArtists = [];
+    if (genreSet.size > 0) {
+      const genres = [...genreSet];
+      const relatedAlbumIds = await Album.findAll({
+        where: { genre: { [Op.in]: genres }, artistId: { [Op.ne]: id } },
+        attributes: ['artistId'],
+        limit: 20
+      });
+      const relatedArtistIds = [...new Set(relatedAlbumIds.map((a) => a.artistId))];
+      relatedArtists = await Artist.findAll({
+        where: { id: { [Op.in]: relatedArtistIds } },
+        limit: 6
+      });
+    }
+    // Fallback: si no hay relacionados por género, artistas populares excluyendo a este
+    if (relatedArtists.length < 3) {
+      const related = await Artist.findAll({
+        where: { id: { [Op.ne]: id } },
+        order: [['monthlyListeners', 'DESC']],
+        limit: 6
+      });
+      for (const r of related) {
+        if (!relatedArtists.some((ra) => ra.id === r.id)) relatedArtists.push(r);
+        if (relatedArtists.length >= 6) break;
+      }
+    }
+
+    return { ...artist.toJSON(), isFollowing, topSongs, relatedArtists };
   }
 
   async createArtist(artistData) {

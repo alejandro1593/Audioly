@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import api from '../../../lib/api'
 import AlbumCard from '../../../components/music/AlbumCard'
+import ArtistCard from '../../../components/music/ArtistCard'
 import { useRequireLoginToPlay } from '../../../hooks/useRequireLoginToPlay'
 import { useAuthStore } from '../../../store/useAuthStore'
 import toast from 'react-hot-toast'
@@ -110,8 +111,35 @@ export default function ArtistPage() {
           </button>
         </header>
 
+        {artist.topSongs?.length > 0 && (
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Canciones principales</h2>
+            <div className="bg-cyber-panel/40 rounded-lg overflow-hidden">
+              {artist.topSongs.map((song, index) => (
+                <div
+                  key={song.id}
+                  onClick={() => playIfLoggedIn(song, allSongs)}
+                  className="flex items-center gap-4 px-4 py-3 text-cyber-text hover:bg-white/5 hover:text-white cursor-pointer transition-colors"
+                >
+                  <span className="w-6 text-center font-bold">{index + 1}</span>
+                  {song.album?.coverImage || song.coverImage ? (
+                    <img src={song.album?.coverImage || song.coverImage} alt="" className="w-10 h-10 rounded object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 bg-cyber-panel rounded flex items-center justify-center">♪</div>
+                  )}
+                  <span className="flex-1 truncate font-semibold text-white">{song.title}</span>
+                  {song.isExplicit && (
+                    <span className="bg-cyber-panel text-white px-2 py-0.5 rounded text-xs border border-cyber-border">E</span>
+                  )}
+                  <span className="text-sm">{formatDuration(song.duration)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section>
-          <h2 className="text-2xl font-bold mb-4">Álbumes</h2>
+          <h2 className="text-2xl font-bold mb-4">Discografía</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {artist.albums?.map((album) => (
               <AlbumCard key={album.id} album={album} />
@@ -125,11 +153,31 @@ export default function ArtistPage() {
             <p className="text-cyber-text">{artist.bio}</p>
           </section>
         )}
+
+        {artist.relatedArtists?.length > 0 && (
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Fanáticos también escuchan</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {artist.relatedArtists.map((ra) => (
+                <ArtistCard key={ra.id} artist={ra} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {LoginPrompt}
     </div>
   )
+}
+
+function formatDuration(seconds) {
+  if (!seconds) return '0 min'
+  const mins = Math.floor(seconds / 60)
+  if (mins < 60) return `${mins} min`
+  const hours = Math.floor(mins / 60)
+  const rest = mins % 60
+  return `${hours} hr ${rest} min`
 }
 
 function formatListeners(num) {

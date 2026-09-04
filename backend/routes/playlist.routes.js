@@ -3,6 +3,9 @@ const router = express.Router();
 const playlistController = require('../controllers/playlist.controller');
 const { protect } = require('../middlewares/auth.middleware');
 
+// Public: get playlist by share token (no auth)
+router.get('/shared/:token', playlistController.getSharedPlaylist);
+
 router.use(protect);
 
 // Create playlist
@@ -13,6 +16,9 @@ router.get('/', playlistController.getAllPlaylists);
 
 // Get liked playlists by current user
 router.get('/liked', playlistController.getLikedPlaylists);
+
+// Generate share link
+router.post('/:id/share', playlistController.generateShareLink);
 
 // Collaborators
 router.get('/:id/collaborators', playlistController.getCollaborators);

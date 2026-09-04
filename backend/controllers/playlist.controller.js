@@ -67,6 +67,16 @@ class PlaylistController {
     const collaborators = await PlaylistService.removeCollaborator(req.params.id, req.user.id, req.params.collaboratorId);
     res.json({ success: true, collaborators });
   });
+
+  generateShareLink = asyncHandler(async (req, res) => {
+    const token = await PlaylistService.generateShareToken(req.params.id, req.user.id);
+    res.json({ success: true, token });
+  });
+
+  getSharedPlaylist = asyncHandler(async (req, res) => {
+    const playlist = await PlaylistService.getSharedPlaylist(req.params.token);
+    res.json({ success: true, playlist });
+  });
 }
 
 module.exports = new PlaylistController();

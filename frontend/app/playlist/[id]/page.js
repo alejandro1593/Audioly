@@ -6,7 +6,8 @@ import api from '../../../lib/api'
 import Link from 'next/link'
 import { useRequireLoginToPlay } from '../../../hooks/useRequireLoginToPlay'
 import { useAuthStore } from '../../../store/useAuthStore'
-import { Pencil, Users, X, Check, UserPlus, ChevronUp, ChevronDown } from 'lucide-react'
+import { Pencil, Users, X, Check, UserPlus, ChevronUp, ChevronDown, Share2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function PlaylistPage() {
   const { id } = useParams()
@@ -136,6 +137,18 @@ export default function PlaylistPage() {
     }
   }
 
+  const handleShare = async (e) => {
+    e.stopPropagation()
+    try {
+      const { data } = await api.post(`/playlists/${id}/share`)
+      const link = `${window.location.origin}/shared/playlist/${data.token}`
+      await navigator.clipboard.writeText(link)
+      toast.success('Enlace copiado al portapapeles')
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No se pudo generar el enlace')
+    }
+  }
+
   return (
     <div>
       <div className="flex items-end gap-6 mb-8">
@@ -204,6 +217,9 @@ export default function PlaylistPage() {
                     className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm transition-colors ${isCollaborative ? 'bg-cyber-purple/20 text-cyber-cyan' : 'bg-cyber-panel text-cyber-text hover:text-white'}`}
                   >
                     <Users size={15} /> {isCollaborative ? 'Colaborativa: sí' : 'Colaborativa: no'}
+                  </button>
+                  <button onClick={handleShare} className="flex items-center gap-1 px-4 py-2 rounded-lg bg-cyber-panel text-cyber-text hover:text-white text-sm">
+                    <Share2 size={15} /> Compartir
                   </button>
                 </>
               )}
