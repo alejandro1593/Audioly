@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import api from '../../../lib/api'
 import { useRequireLoginToPlay } from '../../../hooks/useRequireLoginToPlay'
 import { usePlayerStore } from '../../../store/usePlayerStore'
+import { useAuthStore } from '../../../store/useAuthStore'
+import { Send, Trash2, MessageCircle, Sparkles } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function SongPage() {
   const { id } = useParams()
@@ -14,6 +17,20 @@ export default function SongPage() {
   const [related, setRelated] = useState([])
   const [loading, setLoading] = useState(true)
   const { playIfLoggedIn, LoginPrompt } = useRequireLoginToPlay()
+  const { user: currentUser, isAuthenticated } = useAuthStore()
+  const [comments, setComments] = useState([])
+  const [commentText, setCommentText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
+
+  const fetchComments = useCallback(async () => {
+    try {
+      const res = await api.get(`/songs/${id}/comments`)
+      setComments(res.data.comments || [])
+    } catch (error) {
+      console.error('Error fetching comments:', error)
+    }
+  }, [id])
 
   useEffect(() => {
     if (!id) return
@@ -27,7 +44,6 @@ export default function SongPage() {
         setSong(songRes.data.song)
         setLyrics(lyricsRes.data?.song?.lyrics || '')
 
-        // Canciones relacionadas del mismo artista o álbum
         const artistId = songRes.data.song?.artistId
         const albumId = songRes.data.song?.albumId
         if (artistId || albumId) {
@@ -43,7 +59,34 @@ export default function SongPage() {
       }
     }
     fetchSong()
-  }, [id])
+    fetchComments()
+  }, [id, fetchComments])
+
+  const submitComment = async () => {
+    if (!commentText.trim() || sending) return
+    setSending(true)
+    try {
+      const res = await api.post(`/songs/${id}/comments`, { text: commentText.trim() })
+      setComments((prev) => [res.data.comment, ...prev])
+      setCommentText('')
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No se pudo publicar el comentario')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const deleteComment = async (commentId) => {
+    setDeletingId(commentId)
+    try {
+      await api.delete(`/songs/comments/${commentId}`)
+      setComments((prev) => prev.filter((c) => c.id !== commentId))
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No se pudo eliminar el comentario')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   if (loading) return <div className="text-cyber-text">Cargando...</div>
   if (!song) return <div className="text-cyber-text">Canción no encontrada</div>
@@ -134,6 +177,103 @@ export default function SongPage() {
         </section>
       </div>
 
+      {song.similarArtists?.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-xl font-bold mb-4 text-white flex items-center gap-2">
+            <Sparkles size={20} className="text-cyber-cyan" /> Artistas que también podrían gustarte
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {song.similarArtists.map((artist) => (
+              <Link key={artist.id} href={`/artist/${artist.id}`} className="card group">
+                <div className="mb-3 flex justify-center">
+                  {artist.image ? (
+                    <img
+                      src={artist.image}
+                      alt={artist.name}
+                      className="w-20 h-20 rounded-full object-cover ring-2 ring-cyber-purple/40 group-hover:ring-cyber-cyan transition-all"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-gradient-cyber flex items-center justify-center text-2xl shadow-neon">
+                      <span>{artist.name?.[0]?.toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
+                <h3 className="font-bold text-center truncate group-hover:text-cyber-cyan transition-colors">{artist.name}</h3>
+                <p className="text-cyber-text text-sm text-center mt-1">Artista</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="mt-10">
+        <h2 className="text-xl font-bold mb-4 text-white flex items-center gap-2">
+          <MessageCircle size={20} className="text-cyber-cyan" /> Comentarios <span className="text-sm text-cyber-text font-normal">({comments.length})</span>
+        </h2>
+
+        <div className="glass-panel rounded-2xl p-4 mb-6">
+          {isAuthenticated ? (
+            <>
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="¿Qué te parece esta canción?"
+                rows={3}
+                maxLength={500}
+                className="input-primary w-full resize-none"
+              />
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-xs text-cyber-text">{commentText.length}/500</span>
+                <button
+                  onClick={submitComment}
+                  disabled={!commentText.trim() || sending}
+                  className="btn-primary text-sm disabled:opacity-50"
+                >
+                  {sending ? 'Publicando...' : <span className="flex items-center gap-2"><Send size={14} /> Publicar</span>}
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="text-cyber-text text-sm text-center py-2">
+              <Link href="/login" className="text-cyber-cyan hover:underline">Inicia sesión</Link> para dejar tu comentario
+            </p>
+          )}
+        </div>
+
+        {comments.length === 0 ? (
+          <p className="text-cyber-text/70">Sé el primero en comentar esta canción.</p>
+        ) : (
+          <div className="space-y-4">
+            {comments.map((comment) => (
+              <div key={comment.id} className="glass-panel rounded-2xl p-4 flex items-start gap-4">
+                <div className="w-10 h-10 bg-gradient-cyber rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-neon">
+                  {comment.user?.username?.[0]?.toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Link href={`/user/${comment.user?.id}`} className="font-semibold text-cyber-cyan hover:underline">
+                      {comment.user?.username}
+                    </Link>
+                    <span className="text-xs text-cyber-text">{timeAgo(comment.createdAt)}</span>
+                  </div>
+                  <p className="text-cyber-text break-words whitespace-pre-wrap">{comment.text}</p>
+                </div>
+                {(currentUser?.id === comment.user?.id || currentUser?.role === 'admin') && (
+                  <button
+                    onClick={() => deleteComment(comment.id)}
+                    disabled={deletingId === comment.id}
+                    className="text-cyber-text/50 hover:text-rose-400 transition-colors shrink-0"
+                    title="Eliminar comentario"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {LoginPrompt}
     </div>
   )
@@ -144,4 +284,17 @@ function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return ''
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
+  if (seconds < 60) return 'ahora'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `hace ${minutes} min`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `hace ${hours} h`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `hace ${days} d`
+  return new Date(dateStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
 }

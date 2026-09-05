@@ -1,4 +1,4 @@
-const { Song, Artist, Album, User, ListeningHistory, UserLikedSong } = require('../models');
+const { Song, Artist, Album, User, ListeningHistory, UserLikedSong, Comment } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Op } = require('sequelize');
 
@@ -44,7 +44,34 @@ class SongService {
       throw new ApiError(404, 'Canción no encontrada');
     }
 
-    return song;
+    let similarArtists = song.genre
+      ? await Artist.findAll({
+          include: [
+            {
+              model: Song,
+              as: 'songs',
+              where: { genre: song.genre, artistId: { [Op.ne]: song.artistId } },
+              attributes: []
+            }
+          ],
+          limit: 4
+        })
+      : [];
+
+    // Fallback: artistas populares excluyendo al autor si no hay por género
+    if (similarArtists.length < 3) {
+      const popular = await Artist.findAll({
+        where: { id: { [Op.ne]: song.artistId } },
+        order: [['monthlyListeners', 'DESC']],
+        limit: 4
+      });
+      for (const a of popular) {
+        if (!similarArtists.some((sa) => sa.id === a.id)) similarArtists.push(a);
+        if (similarArtists.length >= 4) break;
+      }
+    }
+
+    return { ...song.toJSON(), similarArtists };
   }
 
   async createSong(songData) {
@@ -133,6 +160,59 @@ class SongService {
     });
 
     return { total: count, songs: rows };
+  }
+
+  async getComments(songId) {
+    const song = await Song.findByPk(songId, { attributes: ['id'] });
+    if (!song) {
+      throw new ApiError(404, 'Canción no encontrada');
+    }
+
+    return Comment.findAll({
+      where: { songId },
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'username'] }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: 50
+    });
+  }
+
+  async addComment(userId, songId, text) {
+    const song = await Song.findByPk(songId, { attributes: ['id'] });
+    if (!song) {
+      throw new ApiError(404, 'Canción no encontrada');
+    }
+    if (!text || !text.trim()) {
+      throw new ApiError(400, 'El comentario no puede estar vacío');
+    }
+    if (text.trim().length > 500) {
+      throw new ApiError(400, 'El comentario no puede superar los 500 caracteres');
+    }
+
+    const comment = await Comment.create({
+      userId,
+      songId,
+      text: text.trim()
+    });
+
+    return Comment.findByPk(comment.id, {
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'username'] }
+      ]
+    });
+  }
+
+  async deleteComment(commentId, userId, isAdmin = false) {
+    const comment = await Comment.findByPk(commentId);
+    if (!comment) {
+      throw new ApiError(404, 'Comentario no encontrado');
+    }
+    if (!isAdmin && comment.userId !== userId) {
+      throw new ApiError(403, 'No tienes permiso para eliminar este comentario');
+    }
+    await comment.destroy();
+    return { success: true };
   }
 }
 

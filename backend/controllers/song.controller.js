@@ -57,6 +57,22 @@ class SongController {
     const song = await SongService.getLyrics(req.params.id);
     res.json({ success: true, song });
   });
+
+  getComments = asyncHandler(async (req, res) => {
+    const comments = await SongService.getComments(req.params.id);
+    res.json({ success: true, comments });
+  });
+
+  addComment = asyncHandler(async (req, res) => {
+    const comment = await SongService.addComment(req.user.id, req.params.id, req.body.text);
+    res.status(201).json({ success: true, comment });
+  });
+
+  deleteComment = asyncHandler(async (req, res) => {
+    const isAdmin = req.user?.role === 'admin';
+    const result = await SongService.deleteComment(req.params.commentId, req.user.id, isAdmin);
+    res.json({ success: true, ...result });
+  });
 }
 
 module.exports = new SongController();

@@ -9,11 +9,14 @@ router.get('/', songController.getAllSongs);
 router.get('/top', songController.getTopSongs);
 router.get('/:id', songController.getSongById);
 router.get('/:id/lyrics', songController.getLyrics);
+router.get('/:id/comments', songController.getComments);
 
 // Protected routes (any authenticated user)
 router.post('/:id/play', protect, songController.recordPlay);
 router.post('/:id/like', protect, songController.likeSong);
 router.delete('/:id/like', protect, songController.unlikeSong);
+router.post('/:id/comments', protect, songController.addComment);
+router.delete('/comments/:commentId', protect, songController.deleteComment);
 
 // Admin/Artist routes
 router.post('/',
