@@ -137,7 +137,15 @@ export default function SongCard({ song, onPlay }) {
         )}
       </div>
 
-      <h3 className="font-bold truncate group-hover:text-cyber-cyan transition-colors">{song.title}</h3>
+      <h3 className="font-bold truncate group-hover:text-cyber-cyan transition-colors">
+        <Link
+          href={`/song/${song.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="hover:underline"
+        >
+          {song.title}
+        </Link>
+      </h3>
       <Link
         href={`/artist/${song.artist?.id}`}
         onClick={(e) => e.stopPropagation()}
