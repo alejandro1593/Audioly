@@ -15,6 +15,7 @@ const ListeningHistory = require('./ListeningHistory');
 const Podcast = require('./Podcast');
 const PodcastEpisode = require('./PodcastEpisode');
 const Comment = require('./Comment');
+const Notification = require('./Notification');
 
 // User <-> Artist (One-to-One)
 User.hasOne(Artist, { foreignKey: 'userId', as: 'artistProfile' });
@@ -82,6 +83,11 @@ Comment.belongsTo(Song, { foreignKey: 'songId', as: 'song' });
 User.hasMany(Comment, { foreignKey: 'userId', as: 'userComments' });
 Comment.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
+// Notifications (destinatario + actor)
+User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
+Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Notification.belongsTo(User, { foreignKey: 'actorId', as: 'actor' });
+
 module.exports = {
   sequelize,
   User,
@@ -98,5 +104,6 @@ module.exports = {
   ListeningHistory,
   Podcast,
   PodcastEpisode,
-  Comment
+  Comment,
+  Notification
 };

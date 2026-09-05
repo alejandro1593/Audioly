@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Search, Menu } from 'lucide-react'
+import NotificationBell from './NotificationBell'
 
 export default function Navbar({ onMenuClick }) {
   const [query, setQuery] = useState('')
@@ -49,6 +50,10 @@ export default function Navbar({ onMenuClick }) {
           className="input-primary bg-cyber-dark rounded-full px-11"
         />
       </form>
+
+      <div className="ml-auto">
+        <NotificationBell />
+      </div>
     </header>
   )
 }

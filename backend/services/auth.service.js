@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { User, Artist, UserFollow } = require('../models');
 const ApiError = require('../utils/ApiError');
+const NotificationService = require('./notification.service');
 const { generateTokens, verifyRefreshToken } = require('../utils/jwt.util');
 
 class AuthService {
@@ -71,9 +72,21 @@ class AuthService {
       throw new ApiError(404, 'Usuario no encontrado');
     }
 
-    await UserFollow.findOrCreate({
+    const [, created] = await UserFollow.findOrCreate({
       where: { followerId: userId, followingId: targetUserId }
     });
+
+    if (created) {
+      const actor = await User.findByPk(userId, { attributes: ['id', 'username'] });
+      await NotificationService.create({
+        userId: targetUserId,
+        actorId: userId,
+        type: 'new_follower',
+        entityType: 'user',
+        entityId: userId,
+        message: `${actor.username} empezó a seguirte`
+      });
+    }
 
     return { success: true };
   }

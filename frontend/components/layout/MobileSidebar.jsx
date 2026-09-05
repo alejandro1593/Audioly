@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useLibraryStore } from '../../store/useLibraryStore'
 import { usePlayerStore } from '../../store/usePlayerStore'
+import { useNotificationStore } from '../../store/useNotificationStore'
 import api from '../../lib/api'
 import { Play, Search, Home, Plus, LogOut, X, Shield, UploadCloud, TrendingUp, Sparkles } from 'lucide-react'
 
@@ -39,6 +40,7 @@ export default function MobileSidebar({ open, onClose }) {
   const handleLogout = () => {
     useAuthStore.getState().logout()
     usePlayerStore.getState().clearQueue()
+    useNotificationStore.getState().reset()
     router.push('/')
     onClose()
   }

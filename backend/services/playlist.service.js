@@ -1,5 +1,6 @@
 const { Playlist, Song, Artist, Album, User, PlaylistSong, PlaylistLike, PlaylistCollaborator, sequelize } = require('../models');
 const ApiError = require('../utils/ApiError');
+const NotificationService = require('./notification.service');
 const jwt = require('jsonwebtoken');
 
 class PlaylistService {
@@ -266,9 +267,22 @@ class PlaylistService {
     const target = await User.findByPk(collaboratorId);
     if (!target) throw new ApiError(404, 'Usuario no encontrado');
 
-    await PlaylistCollaborator.findOrCreate({
+    const [, created] = await PlaylistCollaborator.findOrCreate({
       where: { playlistId, userId: collaboratorId }
     });
+
+    if (created) {
+      const owner = await User.findByPk(playlist.userId);
+      await NotificationService.create({
+        userId: collaboratorId,
+        actorId: playlist.userId,
+        type: 'playlist_collaborator',
+        entityType: 'playlist',
+        entityId: playlist.id,
+        message: `${owner?.username || 'Alguien'} te agregó como colaborador a "${playlist.name}"`
+      });
+    }
+
     return this.getCollaborators(playlistId, userId);
   }
 

@@ -36,6 +36,7 @@ app.use('/api/spotify', require('./routes/spotify.routes'));
 
 // Streaming de audio (Range headers)
 app.use('/api/stream', require('./routes/stream.routes'));
+app.use('/api/notifications', require('./routes/notification.routes'));
 
 // Health check
 app.get('/api/health', (req, res) => {
