@@ -8,6 +8,7 @@ import { useLibraryStore } from '../../store/useLibraryStore'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { useNotificationStore } from '../../store/useNotificationStore'
 import api from '../../lib/api'
+import { mediaUrl } from '../../lib/media'
 import { Play, Search, Home, Plus, LogOut, X, Shield, UploadCloud, TrendingUp, Sparkles } from 'lucide-react'
 
 export default function MobileSidebar({ open, onClose }) {
@@ -140,8 +141,12 @@ export default function MobileSidebar({ open, onClose }) {
               onClick={onClose}
               className="flex items-center gap-2 text-cyber-text hover:text-white transition-all min-w-0"
             >
-              <div className="w-8 h-8 bg-gradient-cyber rounded-full flex items-center justify-center text-white text-sm shadow-neon shrink-0">
-                {user?.username?.[0]?.toUpperCase()}
+<div className="w-8 h-8 bg-gradient-cyber rounded-full flex items-center justify-center text-white text-sm shadow-neon shrink-0 overflow-hidden">
+                {user?.avatar && user.avatar !== 'default-avatar.png' ? (
+                  <img src={mediaUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
+                ) : (
+                  user?.username?.[0]?.toUpperCase()
+                )}
               </div>
               <span className="truncate">{user?.username}</span>
             </Link>

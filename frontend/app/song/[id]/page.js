@@ -9,6 +9,7 @@ import { usePlayerStore } from '../../../store/usePlayerStore'
 import { useAuthStore } from '../../../store/useAuthStore'
 import { Send, Trash2, MessageCircle, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { mediaUrl } from '../../../lib/media'
 
 export default function SongPage() {
   const { id } = useParams()
@@ -246,8 +247,12 @@ export default function SongPage() {
           <div className="space-y-4">
             {comments.map((comment) => (
               <div key={comment.id} className="glass-panel rounded-2xl p-4 flex items-start gap-4">
-                <div className="w-10 h-10 bg-gradient-cyber rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-neon">
-                  {comment.user?.username?.[0]?.toUpperCase()}
+                <div className="w-10 h-10 bg-gradient-cyber rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-neon overflow-hidden">
+                  {comment.user?.avatar && comment.user.avatar !== 'default-avatar.png' ? (
+                    <img src={mediaUrl(comment.user.avatar)} alt={comment.user.username} className="w-full h-full object-cover" />
+                  ) : (
+                    comment.user?.username?.[0]?.toUpperCase()
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">

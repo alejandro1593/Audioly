@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '../../store/useAuthStore'
 import api from '../../lib/api'
+import { mediaUrl } from '../../lib/media'
 import toast from 'react-hot-toast'
-import { User, Lock, Save } from 'lucide-react'
+import { User, Lock, Save, Upload } from 'lucide-react'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -17,8 +18,35 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState('')
 
   if (!isAuthenticated) return null
+
+  const hasAvatar = avatar && avatar !== 'default-avatar.png'
+
+  const uploadAvatar = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarFile(file)
+    setPreviewUrl(URL.createObjectURL(file))
+    const formData = new FormData()
+    formData.append('avatar', file)
+    setUploadingAvatar(true)
+    try {
+      const { data } = await api.post('/users/avatar', formData)
+      setUser(data.user)
+      setAvatar(data.user.avatar)
+      setAvatarFile(null)
+      setPreviewUrl('')
+      toast.success('Avatar actualizado')
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al subir el avatar')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   const saveProfile = async (e) => {
     e.preventDefault()
@@ -61,12 +89,27 @@ export default function SettingsPage() {
 
       <div className="glass-panel p-6 rounded-2xl space-y-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-gradient-cyber rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-neon">
-            {user?.username?.[0]?.toUpperCase()}
+          <div className="relative">
+            {(hasAvatar || previewUrl) ? (
+              <img
+                src={previewUrl || mediaUrl(avatar)}
+                alt="avatar"
+                className="w-16 h-16 object-cover rounded-full border border-cyber-border shadow-neon"
+              />
+            ) : (
+              <div className="w-16 h-16 bg-gradient-cyber rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-neon">
+                {user?.username?.[0]?.toUpperCase()}
+              </div>
+            )}
           </div>
           <div>
             <p className="font-bold text-lg">{user?.username}</p>
             <p className="text-cyber-text text-sm">{user?.email}</p>
+            <label className="inline-flex items-center gap-1.5 mt-2 text-sm text-cyber-cyan hover:underline cursor-pointer">
+              <Upload size={14} />
+              {uploadingAvatar ? 'Subiendo...' : hasAvatar ? 'Cambiar avatar' : 'Subir avatar'}
+              <input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
+            </label>
           </div>
         </div>
 
@@ -85,19 +128,11 @@ export default function SettingsPage() {
             <label className="text-cyber-text text-sm font-semibold block">URL del avatar (opcional)</label>
             <input
               type="text"
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
+              value={avatarFile ? '' : avatar}
+              onChange={(e) => { setAvatar(e.target.value); setAvatarFile(null) }}
               placeholder="https://..."
               className="input-primary mt-1 w-full"
             />
-            {avatar && (
-              <img
-                src={avatar}
-                alt="avatar preview"
-                className="mt-3 w-16 h-16 object-cover rounded-full border border-cyber-border"
-                onError={(e) => { e.currentTarget.style.display = 'none' }}
-              />
-            )}
           </div>
           <button
             type="submit"

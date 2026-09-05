@@ -12,6 +12,18 @@ class UserController {
     res.json({ success: true, user });
   });
 
+  updateAvatar = asyncHandler(async (req, res) => {
+    const user = await UserService.updateAvatar(req.user.id, req.file);
+    res.json({ success: true, user });
+  });
+
+  getMix = asyncHandler(async (req, res) => {
+    const type = req.query.type === 'flashback' ? 'flashback' : 'daily';
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const mix = await UserService.getMix(req.user.id, type, limit);
+    res.json({ success: true, ...mix });
+  });
+
   changePassword = asyncHandler(async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const result = await UserService.changePassword(req.user.id, currentPassword, newPassword);

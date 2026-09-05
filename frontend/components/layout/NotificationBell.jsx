@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Bell, CheckCheck } from 'lucide-react'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useNotificationStore } from '../../store/useNotificationStore'
+import { mediaUrl } from '../../lib/media'
 
 export default function NotificationBell() {
   const { isAuthenticated } = useAuthStore()
@@ -74,8 +75,12 @@ export default function NotificationBell() {
                     onClick={() => setOpen(false)}
                     className={`flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-cyber-border/30 ${!n.readAt ? 'bg-cyber-purple/10' : ''}`}
                   >
-                    <div className="w-9 h-9 bg-gradient-cyber rounded-full flex items-center justify-center text-white font-bold shrink-0">
-                      {n.actor?.username?.[0]?.toUpperCase()}
+                    <div className="w-9 h-9 bg-gradient-cyber rounded-full flex items-center justify-center text-white font-bold shrink-0 overflow-hidden">
+                      {n.actor?.avatar && n.actor.avatar !== 'default-avatar.png' ? (
+                        <img src={mediaUrl(n.actor.avatar)} alt={n.actor.username} className="w-full h-full object-cover" />
+                      ) : (
+                        n.actor?.username?.[0]?.toUpperCase()
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-cyber-text leading-snug">{n.message}</p>

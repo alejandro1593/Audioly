@@ -18,7 +18,7 @@ class NotificationService {
     const notifications = await Notification.findAll({
       where: { userId },
       include: [
-        { model: User, as: 'actor', attributes: ['id', 'username'] }
+        { model: User, as: 'actor', attributes: ['id', 'username', 'avatar'] }
       ],
       order: [['createdAt', 'DESC']],
       limit: 50

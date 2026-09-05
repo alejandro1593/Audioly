@@ -173,6 +173,88 @@ class UserService {
     });
   }
 
+  // Subir/cambiar avatar del usuario
+  async updateAvatar(userId, file) {
+    if (!file) throw new ApiError(400, 'Debes enviar un archivo de imagen');
+    const user = await User.findByPk(userId);
+    if (!user) throw new ApiError(404, 'Usuario no encontrado');
+    user.avatar = `/uploads/${file.filename}`;
+    await user.save();
+    return user.toSafeObject();
+  }
+
+  // Playlists automáticas: 'daily' (Mix del día, recencia) | 'flashback' (Recuerdos, todo el historial)
+  async getMix(userId, type = 'daily', limit = 20) {
+    const isDaily = type !== 'flashback';
+    const rows = await sequelize.query(
+      `SELECT lh.song_id, COUNT(*) AS plays,
+              ${
+                isDaily
+                  ? "SUM(1.0 / (1.0 + (EXTRACT(EPOCH FROM (NOW() - lh.created_at)) / 86400))) AS peso"
+                  : 'COUNT(*) AS peso'
+              }
+       FROM listening_history lh
+       WHERE lh.user_id = :userId
+       GROUP BY lh.song_id
+       ORDER BY peso DESC
+       LIMIT :limit`,
+      { replacements: { userId, limit: parseInt(limit) }, type: sequelize.QueryTypes.SELECT }
+    );
+
+    const include = [
+      { model: Artist, as: 'artist', attributes: ['id', 'name'] },
+      { model: Album, as: 'album', attributes: ['id', 'title', 'coverImage'] }
+    ];
+
+    const rankedIds = rows.map((r) => r.song_id);
+    let rankedSongs = [];
+    if (rankedIds.length) {
+      const found = await Song.findAll({ where: { id: { [Op.in]: rankedIds } }, include });
+      rankedSongs = rankedIds.map((id) => found.find((s) => s.id === id)).filter(Boolean)
+        .map((song, i) => ({ ...song.dataValues, artist: song.artist, album: song.album, peso: rows[i].peso, plays: rows[i].plays }));
+    }
+
+    const inMix = new Set(rankedIds);
+
+    // Canciones marcadas con "me gusta" que no estén en el mix
+    const likedByUser = await UserLikedSong.findAll({ where: { userId }, attributes: ['songId'] });
+    const likedIds = [...new Set(likedByUser.map((l) => l.songId))].filter((id) => !inMix.has(id));
+    let likedSongs = [];
+    if (likedIds.length) {
+      likedSongs = await Song.findAll({ where: { id: { [Op.in]: likedIds } }, include, order: [['plays', 'DESC']], limit });
+      likedSongs.forEach((s) => inMix.add(s.id));
+    }
+
+    // Rellenar con canciones del mismo género/artista para completar el mix
+    let padSongs = [];
+    const remaining = limit - rankedSongs.length - likedSongs.length;
+    if (remaining > 0 && inMix.size > 0) {
+      const prefs = await sequelize.query(
+        `SELECT genre, artist_id FROM songs WHERE id IN (:ids)`,
+        { replacements: { ids: [...inMix] }, type: sequelize.QueryTypes.SELECT }
+      );
+      const genres = [...new Set(prefs.filter((p) => p.genre).map((p) => p.genre))];
+      const artistIds = [...new Set(prefs.map((p) => p.artist_id).filter(Boolean))];
+      const or = [];
+      if (genres.length) or.push({ genre: { [Op.in]: genres } });
+      if (artistIds.length) or.push({ artistId: { [Op.in]: artistIds } });
+      if (or.length) {
+        padSongs = await Song.findAll({
+          where: { id: { [Op.notIn]: [...inMix] }, [Op.or]: or },
+          include,
+          order: [['plays', 'DESC']],
+          limit: remaining
+        });
+      }
+    }
+
+    return {
+      type,
+      name: isDaily ? 'Mix del día' : 'Recuerdos',
+      songs: [...rankedSongs, ...likedSongs, ...padSongs]
+    };
+  }
+
   // Top del usuario: canciones o artistas más escuchados
   // timeRange: 'short_term' (4 semanas) | 'medium_term' (6 meses) | 'long_term' (todo)
   async getTopItems(userId, type = 'tracks', timeRange = 'medium_term', limit = 10) {

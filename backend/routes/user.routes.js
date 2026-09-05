@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
 const { protect } = require('../middlewares/auth.middleware');
+const upload = require('../middlewares/upload.middleware');
 
 router.use(protect);
 
@@ -15,6 +16,12 @@ router.get('/history', userController.getHistory);
 router.get('/recommendations', userController.getRecommendations);
 router.get('/me/top', userController.getTopItems);
 router.get('/me/recap', userController.getRecap);
+
+// Automatic mixes
+router.get('/mix', userController.getMix);
+
+// Update avatar (image upload)
+router.post('/avatar', upload.single('avatar'), userController.updateAvatar);
 
 // Update profile
 router.put('/profile', userController.updateProfile);

@@ -171,7 +171,7 @@ class SongService {
     return Comment.findAll({
       where: { songId },
       include: [
-        { model: User, as: 'user', attributes: ['id', 'username'] }
+        { model: User, as: 'user', attributes: ['id', 'username', 'avatar'] }
       ],
       order: [['createdAt', 'DESC']],
       limit: 50
@@ -198,7 +198,7 @@ class SongService {
 
     return Comment.findByPk(comment.id, {
       include: [
-        { model: User, as: 'user', attributes: ['id', 'username'] }
+        { model: User, as: 'user', attributes: ['id', 'username', 'avatar'] }
       ]
     });
   }

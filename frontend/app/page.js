@@ -11,6 +11,7 @@ import LoginPromptModal from '../components/ui/LoginPromptModal'
 import SpotifyEmbed from '../components/music/SpotifyEmbed'
 import { normalizeSongs } from '../lib/normalize'
 import Link from 'next/link'
+import { Sparkles } from 'lucide-react'
 
 export default function HomePage() {
   const [topSongs, setTopSongs] = useState([])
@@ -116,6 +117,22 @@ export default function HomePage() {
           >
             Iniciar sesión
           </button>
+        </div>
+      )}
+
+      {isAuthenticated && (
+        <div className="glass-panel p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-cyber-purple/20">
+          <div>
+            <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
+              <Sparkles size={20} className="text-cyber-purple" /> Mix del día
+            </h2>
+            <p className="text-cyber-text text-sm">
+              Canciones automáticas según tu historial reciente y tus favoritas. Actualizado cada vez que escuchas.
+            </p>
+          </div>
+          <Link href="/mix" className="btn-primary whitespace-nowrap">
+            Explorar mix
+          </Link>
         </div>
       )}
 

@@ -4,25 +4,27 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import api from '../../../lib/api'
+import { mediaUrl } from '../../../lib/media'
 import toast from 'react-hot-toast'
-import { ListMusic, Users, UserPlus, UserCheck } from 'lucide-react'
+import { ListMusic, Users, UserPlus, UserCheck, Camera } from 'lucide-react'
 import { useAuthStore } from '../../../store/useAuthStore'
 
 export default function UserProfilePage() {
   const { id } = useParams()
-  const { user: currentUser, isAuthenticated } = useAuthStore()
-  const [user, setUser] = useState(null)
+  const { user: currentUser, isAuthenticated, setUser } = useAuthStore()
+  const [user, setUserInfo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [following, setFollowing] = useState(false)
   const [togglingFollow, setTogglingFollow] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   useEffect(() => {
     if (!id) return
     setLoading(true)
     api.get(`/users/${id}`)
       .then((res) => {
-        setUser(res.data.user)
+        setUserInfo(res.data.user)
         setFollowing(!!res.data.user?.isFollowing)
       })
       .catch((err) => {
@@ -30,6 +32,27 @@ export default function UserProfilePage() {
       })
       .finally(() => setLoading(false))
   }, [id])
+
+  const isOwnProfile = isAuthenticated && currentUser?.id === Number(id)
+
+  const uploadAvatar = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const formData = new FormData()
+    formData.append('avatar', file)
+    setUploadingAvatar(true)
+    try {
+      const { data } = await api.post('/users/avatar', formData)
+      setUser(data.user)
+      setUserInfo((prev) => prev ? { ...prev, avatar: data.user.avatar } : prev)
+      toast.success('Avatar actualizado')
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al subir el avatar')
+    } finally {
+      setUploadingAvatar(false)
+      e.target.value = ''
+    }
+  }
 
   const handleFollow = async () => {
     if (!isAuthenticated) {
@@ -59,8 +82,20 @@ export default function UserProfilePage() {
   return (
     <div className="space-y-8">
       <div className="glass-panel p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-6">
-        <div className="w-28 h-28 bg-gradient-cyber rounded-full flex items-center justify-center text-white text-5xl font-black shadow-neon shrink-0">
-          {user.username?.[0]?.toUpperCase()}
+        <div className="relative w-28 h-28 shrink-0">
+          <div className="w-28 h-28 bg-gradient-cyber rounded-full flex items-center justify-center text-white text-5xl font-black shadow-neon overflow-hidden">
+            {user.avatar && user.avatar !== 'default-avatar.png' ? (
+              <img src={mediaUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
+            ) : (
+              user.username?.[0]?.toUpperCase()
+            )}
+          </div>
+          {isOwnProfile && (
+            <label className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-cyber-cyan text-cyber-bg dark:text-cyber-bg flex items-center justify-center shadow-neon cursor-pointer hover:scale-110 transition-transform" title="Cambiar avatar">
+              <Camera size={16} className={uploadingAvatar ? 'animate-spin' : ''} />
+              <input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} />
+            </label>
+          )}
         </div>
         <div className="flex-1 text-center sm:text-left">
           <h1 className="text-3xl font-black">{user.username}</h1>
