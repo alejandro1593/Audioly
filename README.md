@@ -2,6 +2,8 @@
 
 Clon de Spotify construido con **Node.js**, **Express**, **PostgreSQL** (Sequelize), **Next.js 14** y **Tailwind CSS**.
 
+**URL en producción:** https://audioly-89gd.onrender.com
+
 ## Estructura
 
 ```
